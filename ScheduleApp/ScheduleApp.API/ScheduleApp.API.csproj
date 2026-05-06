@@ -12,11 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ScheduleApp.Application\ScheduleApp.Application.csproj" />
+    <ProjectReference Include="..\ScheduleApp.Domain\ScheduleApp.Domain.csproj" />
     <ProjectReference Include="..\ScheduleApp.Infrastructure\ScheduleApp.Infrastructure.csproj" />
   </ItemGroup>
 
