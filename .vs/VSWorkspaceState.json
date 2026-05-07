@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\ScheduleApp",
+    "\\ScheduleApp\\ScheduleApp.Infrastructure",
+    "\\ScheduleApp\\ScheduleApp.WebApi"
+  ],
+  "SelectedNode": "\\ScheduleApp\\ScheduleApp.Infrastructure\\ScheduleApp.Infrastructure.csproj",
+  "PreviewInSolutionExplorer": false
+}
