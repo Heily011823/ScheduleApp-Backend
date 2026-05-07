@@ -3,8 +3,8 @@
     "",
     "\\ScheduleApp",
     "\\ScheduleApp\\ScheduleApp.Application",
-    "\\ScheduleApp\\ScheduleApp.Domain\\Entities"
+    "\\ScheduleApp\\ScheduleApp.Application\\DTOs"
   ],
-  "SelectedNode": "\\ScheduleApp\\ScheduleApp.Domain",
+  "SelectedNode": "\\ScheduleApp\\ScheduleApp.Application\\DTOs\\LoginRequestDto.cs",
   "PreviewInSolutionExplorer": false
 }
