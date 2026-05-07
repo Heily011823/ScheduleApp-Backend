@@ -1,8 +1,12 @@
 ﻿using System;
 
-public class Class1
+// ScheduleApp.Application/Interfaces/IJwtService.cs
+namespace ScheduleApp.Application.Interfaces;
+
+using ScheduleApp.Domain.Entities;
+
+public interface IJwtService
 {
-	public Class1()
-	{
-	}
+    string GenerateToken(User user);
+    DateTime GetExpiration();
 }
