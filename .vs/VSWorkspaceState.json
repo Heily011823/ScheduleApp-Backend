@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\ScheduleApp",
+    "\\ScheduleApp\\ScheduleApp.Application",
+    "\\ScheduleApp\\ScheduleApp.Domain\\Entities"
+  ],
+  "SelectedNode": "\\ScheduleApp\\ScheduleApp.Domain",
+  "PreviewInSolutionExplorer": false
+}
