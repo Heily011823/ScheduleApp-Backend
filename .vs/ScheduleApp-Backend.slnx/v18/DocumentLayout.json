@@ -3,6 +3,30 @@
   "WorkspaceRootPath": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\.gitignore||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\.gitignore||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Services\\PasswordHasherService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\ScheduleApp.Infrastructure\\Services\\PasswordHasherService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Data\\AppDbContext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\ScheduleApp.Infrastructure\\Data\\AppDbContext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Repositories\\UserRepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\ScheduleApp.Infrastructure\\Repositories\\UserRepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IUserRepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\ScheduleApp.Application\\Interfaces\\IUserRepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IPasswordHasher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\ScheduleApp.Application\\Interfaces\\IPasswordHasher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IJwtService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ScheduleApp\\ScheduleApp.Application\\Interfaces\\IJwtService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -35,6 +59,84 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": ".gitignore",
+              "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\.gitignore",
+              "RelativeDocumentMoniker": "ScheduleApp\\.gitignore",
+              "ToolTip": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\.gitignore",
+              "RelativeToolTip": "ScheduleApp\\.gitignore",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-05-09T02:17:48.228Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PasswordHasherService.cs",
+              "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Services\\PasswordHasherService.cs",
+              "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Infrastructure\\Services\\PasswordHasherService.cs",
+              "ToolTip": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Services\\PasswordHasherService.cs",
+              "RelativeToolTip": "ScheduleApp\\ScheduleApp.Infrastructure\\Services\\PasswordHasherService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-09T02:17:07.497Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "UserRepository.cs",
+              "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Repositories\\UserRepository.cs",
+              "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Infrastructure\\Repositories\\UserRepository.cs",
+              "ToolTip": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Repositories\\UserRepository.cs",
+              "RelativeToolTip": "ScheduleApp\\ScheduleApp.Infrastructure\\Repositories\\UserRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-09T02:15:43.216Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Infrastructure\\Data\\AppDbContext.cs",
+              "ToolTip": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Infrastructure\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "ScheduleApp\\ScheduleApp.Infrastructure\\Data\\AppDbContext.cs",
+              "ViewState": "AgIAADMAAAAAAAAAAAAAAAcAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-09T02:15:15.771Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "IUserRepository.cs",
+              "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IUserRepository.cs",
+              "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Application\\Interfaces\\IUserRepository.cs",
+              "ToolTip": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IUserRepository.cs",
+              "RelativeToolTip": "ScheduleApp\\ScheduleApp.Application\\Interfaces\\IUserRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-09T02:14:51.576Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "IPasswordHasher.cs",
+              "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IPasswordHasher.cs",
+              "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Application\\Interfaces\\IPasswordHasher.cs",
+              "ToolTip": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IPasswordHasher.cs",
+              "RelativeToolTip": "ScheduleApp\\ScheduleApp.Application\\Interfaces\\IPasswordHasher.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-09T02:14:22.524Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "IJwtService.cs",
               "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\Interfaces\\IJwtService.cs",
               "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Application\\Interfaces\\IJwtService.cs",
@@ -47,7 +149,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 7,
               "Title": "LoginResponseDto.cs",
               "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\DTOs\\LoginResponseDto.cs",
               "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Application\\DTOs\\LoginResponseDto.cs",
@@ -60,7 +162,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 8,
               "Title": "LoginRequestDto.cs",
               "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.Application\\DTOs\\LoginRequestDto.cs",
               "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.Application\\DTOs\\LoginRequestDto.cs",
@@ -73,7 +175,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 9,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\ScheduleApp.API\\Program.cs",
               "RelativeDocumentMoniker": "ScheduleApp\\ScheduleApp.API\\Program.cs",
@@ -86,7 +188,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 10,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\mateo\\Documents\\1-UNIVERSIDAD\\SEMESTRE 5\\INGENERIA 2\\Corte 3\\TrabajoFianal\\BACKEND\\ScheduleApp-Backend\\ScheduleApp\\HashTool\\Program.cs",
               "RelativeDocumentMoniker": "ScheduleApp\\HashTool\\Program.cs",
