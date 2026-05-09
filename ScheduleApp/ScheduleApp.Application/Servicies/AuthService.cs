@@ -10,28 +10,28 @@ public class AuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public AuthService(IUserRepository userRepository, IJwtService jwtService)
+    public AuthService(
+        IUserRepository userRepository,
+        IJwtService jwtService,
+        IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
     {
-        // Criterio: validar que el usuario existe en BD
         var user = await _userRepository.GetByEmailAsync(request.Email);
 
         if (user is null || !user.IsActive)
             throw new UnauthorizedAccessException("Credenciales incorrectas.");
 
-        // Criterio: validar contraseña
-        bool passwordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-
-        if (!passwordValid)
+        if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Credenciales incorrectas.");
 
-        // Criterio: credenciales correctas → generar token
         return new LoginResponseDto
         {
             AccessToken = _jwtService.GenerateToken(user),

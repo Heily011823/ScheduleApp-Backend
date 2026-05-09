@@ -29,10 +29,10 @@ public class AppDbContext : DbContext
                 Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 FullName = "Administrador",
                 Email = "admin@scheduleapp.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123*"),
+                PasswordHash = "$2a$11$voq.ILCj3M49oj7lMN9l2.Tj9U56jcyrVUf12TxhFqlRydeKe99tS",
                 Role = "Admin",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) // ✅ fijaa
             });
         });
     }

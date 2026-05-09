@@ -2,9 +2,12 @@
   "ExpandedNodes": [
     "",
     "\\ScheduleApp",
-    "\\ScheduleApp\\ScheduleApp.Application",
-    "\\ScheduleApp\\ScheduleApp.Application\\DTOs"
+    "\\ScheduleApp\\ScheduleApp.Application\\Servicies",
+    "\\ScheduleApp\\ScheduleApp.Domain",
+    "\\ScheduleApp\\ScheduleApp.Infrastructure",
+    "\\ScheduleApp\\ScheduleApp.Infrastructure\\Data",
+    "\\ScheduleApp\\ScheduleApp.Infrastructure\\Services"
   ],
-  "SelectedNode": "\\ScheduleApp\\ScheduleApp.Application\\DTOs\\LoginRequestDto.cs",
+  "SelectedNode": "\\ScheduleApp",
   "PreviewInSolutionExplorer": false
 }

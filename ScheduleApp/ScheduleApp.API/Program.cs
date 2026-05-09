@@ -36,6 +36,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
