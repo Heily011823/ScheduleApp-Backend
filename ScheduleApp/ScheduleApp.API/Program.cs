@@ -1,4 +1,11 @@
 // ScheduleApp.API/Program.cs
+
+/// Autor:  Mateo Quintero 
+/// Version: 0.1
+
+// Punto de entrada de la aplicación. Configura todos los servicios,
+// middleware, autenticación JWT e inyección de dependencias.
+
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +18,19 @@ using ScheduleApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Base de datos de prueba (SQL Server local) ──────────────────────────────
+// ── Base de datos ────────────────────────────────────────────────────────────
+// Registra el AppDbContext con SQL Server usando la cadena de conexión
+// definida en appsettings.Development.json → "DefaultConnection"
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ── JWT ─────────────────────────────────────────────────────────────────────
+// ── Autenticación JWT ────────────────────────────────────────────────────────
+// Configura el esquema Bearer para validar tokens JWT en cada request.
+// Parámetros leídos desde appsettings.json sección "Jwt":
+//   Secret   → clave para firmar/verificar el token (mínimo 32 caracteres)
+//   Issuer   → quien emite el token (debe coincidir al validar)
+//   Audience → destinatario del token (debe coincidir al validar)
+//   ClockSkew = Zero → sin margen de tolerancia en la expiración
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -33,10 +48,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // ── Inyección de dependencias ────────────────────────────────────────────────
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
+// Registra las implementaciones concretas para cada interfaz de la capa
+// Application. Scope = una instancia por request HTTP.
+builder.Services.AddScoped<IUserRepository, UserRepository>();       // acceso a BD para usuarios
+builder.Services.AddScoped<IJwtService, JwtService>();               // generación de tokens JWT
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>(); // hashing con BCrypt
+builder.Services.AddScoped<AuthService>();                           // lógica de autenticación
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -44,7 +61,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ── Migraciones automáticas al iniciar ───────────────────────────────────────
+// ── Migraciones automáticas ───────────────────────────────────────────────────
+// Al iniciar la app aplica automáticamente las migraciones pendientes.
+// Útil en desarrollo para no tener que correr dotnet ef database update manualmente.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -57,6 +76,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Orden obligatorio: primero Authentication, luego Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
