@@ -16,10 +16,25 @@ namespace ScheduleApp.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers(
+            [FromQuery] string? name,
+            [FromQuery] string? role,
+            [FromQuery] bool? isActive)
         {
-            var users = await _userService.GetUsersAsync();
-            return Ok(users);
+            try
+            {
+                var users = await _userService.SearchUsersAsync(
+                    name,
+                    role,
+                    isActive);
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500,
+                    $"Error interno del servidor: {ex.Message}");
+            }
         }
     }
 }

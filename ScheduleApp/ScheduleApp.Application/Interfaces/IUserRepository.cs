@@ -18,4 +18,9 @@ public interface IUserRepository
     /// <param name="email">Email a buscar. La implementación normaliza a minúsculas.</param>
     /// <returns>Usuario encontrado o null si no existe.</returns>
     Task<User?> GetByEmailAsync(string email);
+
+    Task<IEnumerable<User>> SearchUsersAsync(
+        string? name,
+        string? role,
+        bool? isActive);
 }

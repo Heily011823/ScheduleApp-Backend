@@ -29,4 +29,32 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByEmailAsync(string email) =>
         await _context.Users
             .FirstOrDefaultAsync(u => u.Email == email.ToLower().Trim());
+
+    public async Task<IEnumerable<User>> SearchUsersAsync(
+        string? name,
+        string? role,
+        bool? isActive)
+    {
+        var query = _context.Users.AsQueryable();
+
+        if (!string.IsNullOrEmpty(name))
+        {
+            query = query.Where(u =>
+                u.FullName.Contains(name));
+        }
+
+        if (!string.IsNullOrEmpty(role))
+        {
+            query = query.Where(u =>
+                u.Role == role);
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(u =>
+                u.IsActive == isActive.Value);
+        }
+
+        return await query.ToListAsync();
+    }
 }
