@@ -14,7 +14,7 @@ public class AsignacionesController : ControllerBase
     {
         var resultado = service.GuardarAsignacion(asignacion);
 
-        if (resultado.Contains("ya tiene"))
+        if (resultado.Contains("ya tiene") || resultado.Contains("ocupada"))
         {
             return BadRequest(resultado);
         }

@@ -1,7 +1,7 @@
 ﻿using ScheduleApp.Domain.Entities;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace ScheduleApp.Application.Services
 {
@@ -9,20 +9,35 @@ namespace ScheduleApp.Application.Services
     {
         private List<Asignacion> asignaciones = new List<Asignacion>();
 
-        public bool EstaDisponible(string docente, DateTime fechaHora)
-        {
-            return !asignaciones.Any(a =>
-             a.Docente == docente && a.FechaHora == fechaHora);
-        }
         public string GuardarAsignacion(Asignacion nueva)
         {
-            if (!EstaDisponible(nueva.Docente, nueva.FechaHora))
+            bool conflictoDocente = asignaciones.Any(a =>
+                a.Docente == nueva.Docente &&
+                a.Dia == nueva.Dia &&
+                nueva.HoraInicio < a.HoraFin &&
+                nueva.HoraFin > a.HoraInicio
+            );
+
+            if (conflictoDocente)
             {
                 return "El docente ya tiene una clase en ese horario";
             }
 
+            bool conflictoAula = asignaciones.Any(a =>
+                a.Aula == nueva.Aula &&
+                a.Dia == nueva.Dia &&
+                nueva.HoraInicio < a.HoraFin &&
+                nueva.HoraFin > a.HoraInicio
+            );
+
+            if (conflictoAula)
+            {
+                return "El aula ya está ocupada en ese horario";
+            }
+
             asignaciones.Add(nueva);
-            return "Asignacion guardada correctamente";
+
+            return "Asignación guardada correctamente";
         }
     }
 }
