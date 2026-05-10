@@ -1,4 +1,5 @@
-﻿using ScheduleApp.Domain.Entities;
+﻿using ScheduleApp.Application.Interfaces;
+using ScheduleApp.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace ScheduleApp.Application.Services
 {
-    public class ClassroomAvailabilityService
+    public class ClassroomAvailabilityService : IClassroomAvailabilityService
     {
         private List<ClassroomAssignment> assignments = new List<ClassroomAssignment>();
 
