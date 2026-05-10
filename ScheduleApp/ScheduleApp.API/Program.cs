@@ -6,15 +6,16 @@
 // Punto de entrada de la aplicación. Configura todos los servicios,
 // middleware, autenticación JWT e inyección de dependencias.
 
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using ScheduleApp.Application.interfaces;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Application.Services;
 using ScheduleApp.Infrastructure.Data;
 using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
+using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Base de datos ────────────────────────────────────────────────────────────
@@ -53,6 +54,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();       // acceso a
 builder.Services.AddScoped<IJwtService, JwtService>();               // generación de tokens JWT
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>(); // hashing con BCrypt
 builder.Services.AddScoped<AuthService>();                           // lógica de autenticación
+
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
