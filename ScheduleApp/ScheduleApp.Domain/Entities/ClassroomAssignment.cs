@@ -10,12 +10,13 @@ namespace ScheduleApp.Domain.Entities
 
         public int ClassroomId { get; set; }
 
-        public Classroom Classroom { get; set; }
-
-        public DayOfWeek Day { get; set; }
+        public DateTime Date { get; set; }
 
         public TimeSpan StartTime { get; set; }
 
         public TimeSpan EndTime { get; set; }
+
+        public Status Status { get; set; }
+
     }
 }

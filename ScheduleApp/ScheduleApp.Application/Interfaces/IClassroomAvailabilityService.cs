@@ -9,13 +9,14 @@ namespace ScheduleApp.Application.Interfaces
     {
         bool IsAvailable(
             int classroomId,
-            DayOfWeek day,
+            DateTime date,
             TimeSpan startTime,
             TimeSpan endTime
-        );
+         );
 
         string SaveAssignment(
             ClassroomAssignment newAssignment
         );
+       
     }
 }

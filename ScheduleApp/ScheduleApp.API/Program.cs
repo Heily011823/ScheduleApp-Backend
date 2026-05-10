@@ -54,6 +54,8 @@ builder.Services.AddScoped<IJwtService, JwtService>();               // generaci
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>(); // hashing con BCrypt
 builder.Services.AddScoped<AuthService>();                           // lógica de autenticación
 
+builder.Services.AddSingleton<IClassroomAvailabilityService, ClassroomAvailabilityService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -64,11 +66,11 @@ var app = builder.Build();
 // ── Migraciones automáticas ───────────────────────────────────────────────────
 // Al iniciar la app aplica automáticamente las migraciones pendientes.
 // Útil en desarrollo para no tener que correr dotnet ef database update manualmente.
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+    //var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    //db.Database.Migrate();
+//}
 
 if (app.Environment.IsDevelopment())
 {
