@@ -1,5 +1,4 @@
 ﻿using ScheduleApp.Application.DTOs;
-using ScheduleApp.Application.interfaces;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 

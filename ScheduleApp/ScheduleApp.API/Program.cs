@@ -9,7 +9,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using ScheduleApp.Application.interfaces;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Application.Services;
 using ScheduleApp.Infrastructure.Data;

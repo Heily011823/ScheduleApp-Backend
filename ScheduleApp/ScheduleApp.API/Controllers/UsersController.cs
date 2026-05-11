@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.DTOs;
-using ScheduleApp.Application.interfaces;
+using ScheduleApp.Application.Interfaces;
 
 namespace ScheduleApp.API.Controllers
 {
