@@ -5,6 +5,10 @@ namespace ScheduleApp.API.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Services;
+<<<<<<< HEAD
+=======
+using Microsoft.AspNetCore.Authorization;
+>>>>>>> feature/23-logout-api
 
 
 /// Autor:  Mateo Quintero 
@@ -50,4 +54,39 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "Error interno del servidor.", detail = ex.Message });
         }
     }
+<<<<<<< HEAD
+=======
+
+    /// <summary>
+    /// Cierra la sesión del usuario autenticado.
+    /// En JWT el cierre de sesión consiste en invalidar/eliminar
+    /// el token del lado del cliente.
+    /// </summary>
+    /// <returns>
+    /// 200 OK si el cierre de sesión fue exitoso.
+    /// 500 Internal Server Error si ocurre un error.
+    /// </returns>
+    [Authorize]
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        try
+        {
+            return Ok(new
+            {
+                success = true,
+                message = "Sesión cerrada correctamente."
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error al cerrar sesión.",
+                detail = ex.Message
+            });
+        }
+    }
+>>>>>>> feature/23-logout-api
 }
