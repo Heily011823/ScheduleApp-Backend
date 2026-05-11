@@ -12,7 +12,7 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260508152919_InitialCreate")]
+    [Migration("20260511193213_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -44,6 +44,11 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("IdentityDocument")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -56,24 +61,23 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.HasIndex("IdentityDocument")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Email = "admin@scheduleapp.com",
-                            FullName = "Administrador",
-                            IsActive = true,
-                            PasswordHash = "$2a$11$ZSBnN5nRMHGs9JFyWGfFNeaShips2b7SIHomyDQRjTu2wFJJMPMnS",
-                            Role = "Admin"
-                        });
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 #pragma warning restore 612, 618
         }

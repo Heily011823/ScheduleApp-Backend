@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.interfaces;
-using ScheduleApp.Domain.Entities;
+
 namespace ScheduleApp.API.Controllers
 {
     /// <summary>
-    /// Controlador de gestión de usuarios. Expone los endpoints REST para
-    /// consultar, crear, editar y eliminar usuarios del sistema.
+    /// Controlador de gestión de usuarios.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -20,11 +19,10 @@ namespace ScheduleApp.API.Controllers
         }
 
         /// <summary>
-        /// Lista todos los usuarios. Soporta filtros opcionales por nombre, rol y estado activo.
+        /// Lista usuarios.
         /// </summary>
-        /// <returns>200 OK con la lista de usuarios; 500 si ocurre un error interno.</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers(
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers(
             [FromQuery] string? name,
             [FromQuery] string? role,
             [FromQuery] bool? isActive)
@@ -35,7 +33,20 @@ namespace ScheduleApp.API.Controllers
                     name,
                     role,
                     isActive);
-                return Ok(users);
+
+                var response = users.Select(user => new UserResponseDto
+                {
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    Username = user.Username,
+                    IdentityDocument = user.IdentityDocument,
+                    Role = user.Role,
+                    IsActive = user.IsActive,
+                    CreatedAt = user.CreatedAt
+                });
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -45,10 +56,8 @@ namespace ScheduleApp.API.Controllers
         }
 
         /// <summary>
-        /// Crea un nuevo usuario en el sistema.
+        /// Crear usuario.
         /// </summary>
-        /// <param name="dto">Datos del usuario a crear (validados automáticamente por DataAnnotations).</param>
-        /// <returns>201 Created con el usuario creado; 400 si la validación falla; 409 si el email ya está en uso; 500 si ocurre un error.</returns>
         [HttpPost]
         public async Task<ActionResult<UserResponseDto>> CreateUser(
             [FromBody] CreateUserDto dto)
@@ -56,11 +65,11 @@ namespace ScheduleApp.API.Controllers
             try
             {
                 var created = await _userService.CreateUserAsync(dto);
+
                 return Created($"/api/users/{created.Id}", created);
             }
             catch (InvalidOperationException ex)
             {
-                // Email duplicado u otra regla de negocio violada
                 return Conflict(new { message = ex.Message });
             }
             catch (Exception ex)
@@ -71,11 +80,8 @@ namespace ScheduleApp.API.Controllers
         }
 
         /// <summary>
-        /// Actualiza los datos de un usuario existente.
+        /// Actualizar usuario.
         /// </summary>
-        /// <param name="id">Identificador GUID del usuario.</param>
-        /// <param name="dto">Nuevos datos del usuario.</param>
-        /// <returns>200 OK con el usuario actualizado; 404 si no existe; 409 si el email choca con otro usuario; 500 si ocurre un error.</returns>
         [HttpPut("{id}")]
         public async Task<ActionResult<UserResponseDto>> UpdateUser(
             Guid id,
@@ -84,6 +90,7 @@ namespace ScheduleApp.API.Controllers
             try
             {
                 var updated = await _userService.UpdateUserAsync(id, dto);
+
                 if (updated == null)
                 {
                     return NotFound(new
@@ -91,6 +98,7 @@ namespace ScheduleApp.API.Controllers
                         message = $"No se encontró un usuario con el Id '{id}'."
                     });
                 }
+
                 return Ok(updated);
             }
             catch (InvalidOperationException ex)
@@ -105,18 +113,15 @@ namespace ScheduleApp.API.Controllers
         }
 
         /// <summary>
-        /// Elimina un usuario del sistema mediante borrado lógico (soft delete:
-        /// marca IsActive en false en lugar de borrar la fila para preservar
-        /// integridad referencial e historial).
+        /// Eliminar usuario.
         /// </summary>
-        /// <param name="id">Identificador GUID del usuario a eliminar.</param>
-        /// <returns>204 NoContent si fue eliminado o ya estaba inactivo; 404 si no existe; 500 si ocurre un error.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
             try
             {
                 var deleted = await _userService.DeleteUserAsync(id);
+
                 if (!deleted)
                 {
                     return NotFound(new
@@ -124,6 +129,7 @@ namespace ScheduleApp.API.Controllers
                         message = $"No se encontró un usuario con el Id '{id}'."
                     });
                 }
+
                 return NoContent();
             }
             catch (Exception ex)

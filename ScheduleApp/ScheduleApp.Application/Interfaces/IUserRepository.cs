@@ -1,44 +1,45 @@
 ﻿using System;
-// ScheduleApp.Application/Interfaces/IUserRepository.cs
-// Contrato para el acceso a datos de usuarios.
-// Permite que Application consulte y manipule usuarios sin depender de EF Core directamente.
-/// Autor:  Mateo Quintero
-/// Version: 0.1
+using ScheduleApp.Domain.Entities;
+
 namespace ScheduleApp.Application.Interfaces;
 
-using ScheduleApp.Domain.Entities;
+/// <summary>
+/// Contrato para acceso a datos de usuarios.
+/// </summary>
+/// Autor: Mateo Quintero
+/// Version: 0.2
 public interface IUserRepository
 {
     /// <summary>
-    /// Busca un usuario por su correo electrónico.
+    /// Busca un usuario por email.
     /// </summary>
-    /// <param name="email">Email a buscar. La implementación normaliza a minúsculas.</param>
-    /// <returns>Usuario encontrado o null si no existe.</returns>
     Task<User?> GetByEmailAsync(string email);
 
     /// <summary>
-    /// Busca un usuario por su identificador único.
-    /// Necesario para los flujos de actualización y eliminación (soft delete).
+    /// Busca un usuario por email o username.
     /// </summary>
-    /// <param name="id">Identificador GUID del usuario.</param>
-    /// <returns>Usuario encontrado o null si no existe.</returns>
+    Task<User?> GetByEmailOrUsernameAsync(string login);
+
+    /// <summary>
+    /// Busca un usuario por Id.
+    /// </summary>
     Task<User?> GetByIdAsync(Guid id);
 
+    /// <summary>
+    /// Busca usuarios con filtros.
+    /// </summary>
     Task<IEnumerable<User>> SearchUsersAsync(
         string? name,
         string? role,
         bool? isActive);
 
     /// <summary>
-    /// Persiste un nuevo usuario en la base de datos.
+    /// Crear usuario.
     /// </summary>
-    /// <param name="user">Entidad de usuario lista para ser creada.</param>
     Task AddAsync(User user);
 
     /// <summary>
-    /// Persiste los cambios de un usuario existente.
-    /// También se usa para realizar soft delete (cambiando IsActive a false).
+    /// Actualizar usuario.
     /// </summary>
-    /// <param name="user">Entidad de usuario con los cambios a aplicar.</param>
     Task UpdateAsync(User user);
 }

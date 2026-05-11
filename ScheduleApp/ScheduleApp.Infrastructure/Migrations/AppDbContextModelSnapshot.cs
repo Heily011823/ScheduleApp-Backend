@@ -41,6 +41,11 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("IdentityDocument")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -53,24 +58,23 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.HasIndex("IdentityDocument")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Email = "admin@scheduleapp.com",
-                            FullName = "Administrador",
-                            IsActive = true,
-                            PasswordHash = "$2a$11$voq.ILCj3M49oj7lMN9l2.Tj9U56jcyrVUf12TxhFqlRydeKe99tS",
-                            Role = "Admin"
-                        });
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 #pragma warning restore 612, 618
         }

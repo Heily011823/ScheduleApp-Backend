@@ -18,6 +18,8 @@ namespace ScheduleApp.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    IdentityDocument = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Role = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -28,15 +30,22 @@ namespace ScheduleApp.Infrastructure.Migrations
                     table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "CreatedAt", "Email", "FullName", "IsActive", "PasswordHash", "Role" },
-                values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "admin@scheduleapp.com", "Administrador", true, "$2a$11$ZSBnN5nRMHGs9JFyWGfFNeaShips2b7SIHomyDQRjTu2wFJJMPMnS", "Admin" });
-
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
                 table: "Users",
                 column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_IdentityDocument",
+                table: "Users",
+                column: "IdentityDocument",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Username",
+                table: "Users",
+                column: "Username",
                 unique: true);
         }
 

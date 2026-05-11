@@ -2,11 +2,12 @@
 using ScheduleApp.Application.interfaces;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
+
 namespace ScheduleApp.Application.Services
 {
     /// <summary>
-    /// Servicio de gestión de usuarios. Orquesta validaciones de negocio,
-    /// hasheo de contraseñas y persistencia a través del repositorio.
+    /// Servicio de gestión de usuarios.
+    /// Maneja validaciones, persistencia y seguridad.
     /// </summary>
     public class UserService : IUserService
     {
@@ -35,15 +36,15 @@ namespace ScheduleApp.Application.Services
         }
 
         /// <summary>
-        /// Crea un nuevo usuario. Normaliza el email a minúsculas, valida que
-        /// no exista otro con el mismo email y hashea la contraseña con BCrypt.
+        /// Crea un nuevo usuario.
         /// </summary>
         public async Task<UserResponseDto> CreateUserAsync(CreateUserDto dto)
         {
             var normalizedEmail = dto.Email.ToLower().Trim();
 
-            // Validación de unicidad del email
+            // Validar email único
             var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
+
             if (existing != null)
             {
                 throw new InvalidOperationException(
@@ -55,9 +56,11 @@ namespace ScheduleApp.Application.Services
                 Id = Guid.NewGuid(),
                 FullName = dto.FullName.Trim(),
                 Email = normalizedEmail,
+                Username = dto.Username.Trim(),
+                IdentityDocument = dto.IdentityDocument.Trim(),
                 PasswordHash = _passwordHasher.Hash(dto.Password),
                 Role = dto.Role.Trim(),
-                IsActive = true,
+                IsActive = dto.Status == "Activo",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -67,20 +70,22 @@ namespace ScheduleApp.Application.Services
         }
 
         /// <summary>
-        /// Actualiza un usuario existente. Si el email cambió, valida unicidad.
-        /// Retorna null si no se encontró el usuario.
+        /// Actualiza un usuario existente.
         /// </summary>
         public async Task<UserResponseDto?> UpdateUserAsync(Guid id, UpdateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return null;
+
+            if (user == null)
+                return null;
 
             var normalizedEmail = dto.Email.ToLower().Trim();
 
-            // Si el email cambió, validar que no esté en uso por otro usuario
+            // Validar email único si cambió
             if (user.Email != normalizedEmail)
             {
                 var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
+
                 if (existing != null && existing.Id != id)
                 {
                     throw new InvalidOperationException(
@@ -99,31 +104,35 @@ namespace ScheduleApp.Application.Services
         }
 
         /// <summary>
-        /// Realiza borrado lógico marcando IsActive como false.
-        /// Idempotente: si ya estaba inactivo, retorna true sin persistir cambios.
+        /// Borrado lógico de usuario.
         /// </summary>
         public async Task<bool> DeleteUserAsync(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return false;
 
-            if (!user.IsActive) return true; // Ya estaba inactivo, idempotente
+            if (user == null)
+                return false;
+
+            if (!user.IsActive)
+                return true;
 
             user.IsActive = false;
+
             await _userRepository.UpdateAsync(user);
 
             return true;
         }
 
         /// <summary>
-        /// Mapea una entidad User a su DTO de respuesta omitiendo el PasswordHash.
-        /// Centraliza el mapeo para mantener DRY y evitar fugas de datos sensibles.
+        /// Convierte User → UserResponseDto
         /// </summary>
         private static UserResponseDto MapToResponseDto(User user) => new()
         {
             Id = user.Id,
             FullName = user.FullName,
             Email = user.Email,
+            Username = user.Username,
+            IdentityDocument = user.IdentityDocument,
             Role = user.Role,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt
