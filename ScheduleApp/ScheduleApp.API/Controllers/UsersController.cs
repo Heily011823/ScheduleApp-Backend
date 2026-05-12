@@ -41,7 +41,7 @@ namespace ScheduleApp.API.Controllers
                     Email = user.Email,
                     Username = user.Username,
                     IdentityDocument = user.IdentityDocument,
-                    Role = user.Role,
+                    RoleName = user.Role.Name,
                     IsActive = user.IsActive,
                     CreatedAt = user.CreatedAt
                 });

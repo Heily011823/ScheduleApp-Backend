@@ -6,11 +6,6 @@ using ScheduleApp.Infrastructure.Data;
 
 namespace ScheduleApp.Infrastructure.Repositories;
 
-/// <summary>
-/// Repositorio de usuarios.
-/// </summary>
-/// Autor: Mateo Quintero
-/// Version: 0.2
 public class UserRepository : IUserRepository
 {
     private readonly AppDbContext _context;
@@ -20,48 +15,42 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    /// <summary>
-    /// Busca un usuario por email.
-    /// </summary>
     public async Task<User?> GetByEmailAsync(string email)
     {
         var normalizedEmail = email.ToLower().Trim();
 
         return await _context.Users
+            .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
                 u.Email == normalizedEmail);
     }
 
-    /// <summary>
-    /// Busca un usuario por email o username.
-    /// </summary>
     public async Task<User?> GetByEmailOrUsernameAsync(string login)
     {
         var normalizedLogin = login.ToLower().Trim();
 
         return await _context.Users
+            .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
                 u.Email == normalizedLogin ||
                 u.Username.ToLower() == normalizedLogin);
     }
 
-    /// <summary>
-    /// Busca usuario por Id.
-    /// </summary>
     public async Task<User?> GetByIdAsync(Guid id)
     {
-        return await _context.Users.FindAsync(id);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
-    /// <summary>
-    /// Buscar usuarios con filtros.
-    /// </summary>
     public async Task<IEnumerable<User>> SearchUsersAsync(
         string? name,
         string? role,
         bool? isActive)
     {
-        var query = _context.Users.AsQueryable();
+        var query = _context.Users
+            .Include(u => u.Role)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
         {
@@ -74,7 +63,7 @@ public class UserRepository : IUserRepository
         if (!string.IsNullOrWhiteSpace(role))
         {
             query = query.Where(u =>
-                u.Role == role);
+                u.Role.Name == role);
         }
 
         if (isActive.HasValue)
@@ -86,18 +75,12 @@ public class UserRepository : IUserRepository
         return await query.ToListAsync();
     }
 
-    /// <summary>
-    /// Crear usuario.
-    /// </summary>
     public async Task AddAsync(User user)
     {
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Actualizar usuario.
-    /// </summary>
     public async Task UpdateAsync(User user)
     {
         _context.Users.Update(user);

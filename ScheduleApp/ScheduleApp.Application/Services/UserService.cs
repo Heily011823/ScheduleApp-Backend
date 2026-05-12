@@ -4,14 +4,16 @@ using ScheduleApp.Domain.Entities;
 
 namespace ScheduleApp.Application.Services
 {
-    /// <summary>
-    /// Servicio de gestión de usuarios.
-    /// Maneja validaciones, persistencia y seguridad.
-    /// </summary>
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
+
+        private static readonly Guid AdministradorRoleId =
+            Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        private static readonly Guid CoordinadorRoleId =
+            Guid.Parse("22222222-2222-2222-2222-222222222222");
 
         public UserService(
             IUserRepository userRepository,
@@ -34,14 +36,10 @@ namespace ScheduleApp.Application.Services
             return await _userRepository.SearchUsersAsync(name, role, isActive);
         }
 
-        /// <summary>
-        /// Crea un nuevo usuario.
-        /// </summary>
         public async Task<UserResponseDto> CreateUserAsync(CreateUserDto dto)
         {
             var normalizedEmail = dto.Email.ToLower().Trim();
 
-            // Validar email único
             var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
 
             if (existing != null)
@@ -58,7 +56,7 @@ namespace ScheduleApp.Application.Services
                 Username = dto.Username.Trim(),
                 IdentityDocument = dto.IdentityDocument.Trim(),
                 PasswordHash = _passwordHasher.Hash(dto.Password),
-                Role = dto.Role.Trim(),
+                RoleId = GetRoleId(dto.Role),
                 IsActive = dto.Status == "Activo",
                 CreatedAt = DateTime.UtcNow
             };
@@ -68,9 +66,6 @@ namespace ScheduleApp.Application.Services
             return MapToResponseDto(user);
         }
 
-        /// <summary>
-        /// Actualiza un usuario existente.
-        /// </summary>
         public async Task<UserResponseDto?> UpdateUserAsync(Guid id, UpdateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(id);
@@ -80,7 +75,6 @@ namespace ScheduleApp.Application.Services
 
             var normalizedEmail = dto.Email.ToLower().Trim();
 
-            // Validar email único si cambió
             if (user.Email != normalizedEmail)
             {
                 var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
@@ -94,7 +88,7 @@ namespace ScheduleApp.Application.Services
 
             user.FullName = dto.FullName.Trim();
             user.Email = normalizedEmail;
-            user.Role = dto.Role.Trim();
+            user.RoleId = GetRoleId(dto.Role);
             user.IsActive = dto.IsActive;
 
             await _userRepository.UpdateAsync(user);
@@ -102,9 +96,6 @@ namespace ScheduleApp.Application.Services
             return MapToResponseDto(user);
         }
 
-        /// <summary>
-        /// Borrado lógico de usuario.
-        /// </summary>
         public async Task<bool> DeleteUserAsync(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
@@ -122,9 +113,13 @@ namespace ScheduleApp.Application.Services
             return true;
         }
 
-        /// <summary>
-        /// Convierte User → UserResponseDto
-        /// </summary>
+        private static Guid GetRoleId(string role)
+        {
+            return role.Trim() == "Administrador"
+                ? AdministradorRoleId
+                : CoordinadorRoleId;
+        }
+
         private static UserResponseDto MapToResponseDto(User user) => new()
         {
             Id = user.Id,
@@ -132,7 +127,7 @@ namespace ScheduleApp.Application.Services
             Email = user.Email,
             Username = user.Username,
             IdentityDocument = user.IdentityDocument,
-            Role = user.Role,
+            RoleName = user.Role?.Name ?? string.Empty,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt
         };

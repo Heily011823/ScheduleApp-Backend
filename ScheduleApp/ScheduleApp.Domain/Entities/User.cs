@@ -16,7 +16,11 @@ public class User
 
     public string PasswordHash { get; set; } = string.Empty;
 
-    public string Role { get; set; } = string.Empty;
+    // Foreign Key
+    public Guid RoleId { get; set; }
+
+    // Navegación
+    public Role Role { get; set; } = null!;
 
     public bool IsActive { get; set; } = true;
 

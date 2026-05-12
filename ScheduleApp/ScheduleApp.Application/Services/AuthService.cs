@@ -55,7 +55,7 @@ public class AuthService
             AccessToken = _jwtService.GenerateToken(user),
             ExpiresAt = _jwtService.GetExpiration(),
             UserName = user.FullName,
-            Role = user.Role
+            Role = user.Role.Name
         };
     }
 }
