@@ -14,6 +14,8 @@ public class LoginResponseDto
     /// <summary>Token JWT firmado. El cliente debe enviarlo en el header Authorization: Bearer {token}.</summary>
     public string AccessToken { get; set; } = string.Empty;
 
+    public string RefreshToken { get; set; } = string.Empty;
+
     /// <summary>Tipo de token. Siempre "Bearer" para JWT.</summary>
     public string TokenType { get; set; } = "Bearer";
 

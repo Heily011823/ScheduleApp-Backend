@@ -15,7 +15,10 @@ using ScheduleApp.Infrastructure.Data;
 using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
 using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 // ── Base de datos ────────────────────────────────────────────────────────────
 // Registra el AppDbContext con SQL Server usando la cadena de conexión
@@ -49,17 +52,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ── Inyección de dependencias ────────────────────────────────────────────────
 // Registra las implementaciones concretas para cada interfaz de la capa
 // Application. Scope = una instancia por request HTTP.
-builder.Services.AddScoped<IUserRepository, UserRepository>();       // acceso a BD para usuarios
-builder.Services.AddScoped<IJwtService, JwtService>();               // generación de tokens JWT
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>(); // hashing con BCrypt
-builder.Services.AddScoped<AuthService>();                           // lógica de autenticación
-
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>(); // ← aquí
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 
 var app = builder.Build();
 
@@ -77,6 +79,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 // Orden obligatorio: primero Authentication, luego Authorization
 app.UseAuthentication();

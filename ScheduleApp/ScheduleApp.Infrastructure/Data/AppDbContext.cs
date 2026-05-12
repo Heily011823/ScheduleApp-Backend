@@ -6,6 +6,7 @@ namespace ScheduleApp.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -81,6 +82,30 @@ public class AppDbContext : DbContext
 
             entity.Property(u => u.CreatedAt)
                   .IsRequired();
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.HasIndex(r => r.Token).IsUnique();
+
+            entity.Property(r => r.Token)
+                  .IsRequired();
+
+            entity.Property(r => r.ExpiresAt)
+                  .IsRequired();
+
+            entity.Property(r => r.CreatedAt)
+                  .IsRequired();
+
+            entity.Property(r => r.IsRevoked)
+                  .IsRequired();
+
+            entity.HasOne(r => r.User)
+                  .WithMany()
+                  .HasForeignKey(r => r.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
