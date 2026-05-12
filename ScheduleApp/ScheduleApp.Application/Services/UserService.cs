@@ -88,8 +88,15 @@ namespace ScheduleApp.Application.Services
 
             user.FullName = dto.FullName.Trim();
             user.Email = normalizedEmail;
+            user.Username = dto.Username.Trim();
+            user.IdentityDocument = dto.IdentityDocument.Trim();
             user.RoleId = GetRoleId(dto.Role);
             user.IsActive = dto.IsActive;
+
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                user.PasswordHash = _passwordHasher.Hash(dto.Password);
+            }
 
             await _userRepository.UpdateAsync(user);
 
@@ -120,16 +127,19 @@ namespace ScheduleApp.Application.Services
                 : CoordinadorRoleId;
         }
 
-        private static UserResponseDto MapToResponseDto(User user) => new()
+        private static UserResponseDto MapToResponseDto(User user)
         {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Username = user.Username,
-            IdentityDocument = user.IdentityDocument,
-            RoleName = user.Role?.Name ?? string.Empty,
-            IsActive = user.IsActive,
-            CreatedAt = user.CreatedAt
-        };
+            return new UserResponseDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                Username = user.Username,
+                IdentityDocument = user.IdentityDocument,
+                RoleName = user.Role?.Name ?? string.Empty,
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt
+            };
+        }
     }
 }
