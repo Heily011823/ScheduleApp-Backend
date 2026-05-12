@@ -2,8 +2,14 @@
   "ExpandedNodes": [
     "",
     "\\ScheduleApp",
+    "\\ScheduleApp\\HashTool",
+    "\\ScheduleApp\\ScheduleApp.API",
+    "\\ScheduleApp\\ScheduleApp.API\\Controllers",
+    "\\ScheduleApp\\ScheduleApp.API\\Properties",
+    "\\ScheduleApp\\ScheduleApp.Application",
     "\\ScheduleApp\\ScheduleApp.Infrastructure",
-    "\\ScheduleApp\\ScheduleApp.WebApi"
+    "\\ScheduleApp\\ScheduleApp.Infrastructure\\Migrations",
+    "\\ScheduleApp\\ScheduleApp.Infrastructure\\Repositories"
   ],
   "SelectedNode": "\\ScheduleApp\\ScheduleApp.slnx",
   "PreviewInSolutionExplorer": false
