@@ -12,8 +12,8 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260512233206_CreateMateriasTable")]
-    partial class CreateMateriasTable
+    [Migration("20260513222127_CreateSubjectsTable")]
+    partial class CreateSubjectsTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,80 +24,6 @@ namespace ScheduleApp.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("ScheduleApp.Domain.Entities.Materia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Creditos")
-                        .HasColumnType("int");
-
-                    b.Property<int>("HorasSemanales")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<int>("Semestre")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Codigo")
-                        .IsUnique();
-
-                    b.ToTable("Materias");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
-                            Codigo = "MAT101",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Creditos = 4,
-                            HorasSemanales = 4,
-                            IsActive = true,
-                            Nombre = "Matematicas I",
-                            Semestre = 1
-                        },
-                        new
-                        {
-                            Id = new Guid("aaaaaaaa-2222-2222-2222-222222222222"),
-                            Codigo = "ING201",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Creditos = 3,
-                            HorasSemanales = 4,
-                            IsActive = true,
-                            Nombre = "Ingenieria de Software",
-                            Semestre = 3
-                        },
-                        new
-                        {
-                            Id = new Guid("aaaaaaaa-3333-3333-3333-333333333333"),
-                            Codigo = "BD401",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Creditos = 4,
-                            HorasSemanales = 6,
-                            IsActive = true,
-                            Nombre = "Bases de Datos",
-                            Semestre = 4
-                        });
-                });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Role", b =>
                 {
@@ -128,6 +54,50 @@ namespace ScheduleApp.Infrastructure.Migrations
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
                             Name = "Coordinador"
                         });
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.Subject", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Credits")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Semester")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("WeeklyHours")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Subjects", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.User", b =>
