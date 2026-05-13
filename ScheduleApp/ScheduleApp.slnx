@@ -1,8 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="ScheduleApp.Application/ScheduleApp.Application.csproj" />
-    <Project Path="ScheduleApp.Domain/ScheduleApp.Domain.csproj" />
-    <Project Path="ScheduleApp.Infrastructure/ScheduleApp.Infrastructure.csproj" />
-  </Folder>
-  <Project Path="ScheduleApp.WebApi/ScheduleApp.WebApi.csproj" />
-</Solution>
