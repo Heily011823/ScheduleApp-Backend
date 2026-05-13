@@ -1,17 +1,11 @@
-﻿using ScheduleApp.Domain.Entities;
-namespace ScheduleApp.Application.Interfaces;
-/// <summary>
-/// Contrato del servicio de gestion de materias. Define las operaciones
-/// de consulta expuestas a la capa API.
-/// </summary>
-public interface IMateriaService
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace ScheduleApp.Application.Interfaces
 {
-    /// <summary>
-    /// Obtiene materias aplicando filtros opcionales (nombre, semestre, estado).
-    /// Si no se envia ningun filtro, retorna todas las materias registradas.
-    /// </summary>
-    Task<IEnumerable<Materia>> SearchMateriasAsync(
-        string? nombre,
-        int? semestre,
-        bool? isActive);
+    public interface IMateriaService
+    {
+        Task<bool> EliminarMateriaAsync(int id);
+    }
 }

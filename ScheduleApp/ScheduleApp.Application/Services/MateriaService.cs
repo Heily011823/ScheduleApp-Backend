@@ -1,28 +1,34 @@
 ﻿using ScheduleApp.Application.Interfaces;
-using ScheduleApp.Domain.Entities;
-namespace ScheduleApp.Application.Services;
-/// <summary>
-/// Servicio de materias. Por ahora delega directamente al repositorio.
-/// Se mantiene esta capa para preservar la arquitectura (Controller -> Service -> Repository)
-/// y permitir agregar logica de negocio mas adelante sin tocar el controller.
-/// </summary>
-public class MateriaService : IMateriaService
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace ScheduleApp.Application.Services
 {
-    private readonly IMateriaRepository _materiaRepository;
-
-    public MateriaService(IMateriaRepository materiaRepository)
+    public class MateriaService : IMateriaService
     {
-        _materiaRepository = materiaRepository;
-    }
+        private readonly IMateriaRepository _materiaRepository;
 
-    public async Task<IEnumerable<Materia>> SearchMateriasAsync(
-        string? nombre,
-        int? semestre,
-        bool? isActive)
-    {
-        return await _materiaRepository.SearchMateriasAsync(
-            nombre,
-            semestre,
-            isActive);
+        public MateriaService(IMateriaRepository materiaRepository)
+        {
+            _materiaRepository = materiaRepository;
+        }
+
+        public async Task<bool> EliminarMateriaAsync(int id)
+        {
+            var materia = await _materiaRepository.GetByIdAsync(id);
+
+            if (materia == null)
+                throw new Exception("Materia no encontrada");
+
+            if (!materia.Activo)
+                throw new Exception("La materia ya fue eliminada previamente");
+
+            materia.Activo = false;
+
+            await _materiaRepository.UpdateAsync(materia);
+
+            return true;
+        }
     }
 }
