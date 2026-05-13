@@ -2,41 +2,34 @@
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
+
 namespace ScheduleApp.Infrastructure.Repositories;
-/// <summary>
-/// Implementacion concreta de IMateriaRepository usando Entity Framework Core.
-/// Encapsula las consultas a la tabla Materias.
-/// </summary>
+
 public class MateriaRepository : IMateriaRepository
 {
     private readonly AppDbContext _context;
 
-    public MateriaRepository(AppDbContext context) => _context = context;
-
-    /// <summary>
-    /// Construye dinamicamente la query con los filtros que vengan no nulos.
-    /// Si no se pasa ningun filtro, retorna todas las materias.
-    /// </summary>
-    public async Task<IEnumerable<Materia>> SearchMateriasAsync(
-        string? nombre,
-        int? semestre,
-        bool? isActive)
+    public MateriaRepository(AppDbContext context)
     {
-        var query = _context.Materias.AsQueryable();
+        _context = context;
+    }
 
-        if (!string.IsNullOrEmpty(nombre))
-        {
-            query = query.Where(m => m.Nombre.Contains(nombre));
-        }
-        if (semestre.HasValue)
-        {
-            query = query.Where(m => m.Semestre == semestre.Value);
-        }
-        if (isActive.HasValue)
-        {
-            query = query.Where(m => m.IsActive == isActive.Value);
-        }
+    public async Task<Materia?> GetByIdAsync(int id)
+    {
+        return await _context.Materias
+            .FirstOrDefaultAsync(m => m.Id == id);
+    }
 
-        return await query.ToListAsync();
+    public async Task<List<Materia>> GetActivasAsync()
+    {
+        return await _context.Materias
+            .Where(m => m.Activo)
+            .ToListAsync();
+    }
+
+    public async Task UpdateAsync(Materia materia)
+    {
+        _context.Materias.Update(materia);
+        await _context.SaveChangesAsync();
     }
 }
