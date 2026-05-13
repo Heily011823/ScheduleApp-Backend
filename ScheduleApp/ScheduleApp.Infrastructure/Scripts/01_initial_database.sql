@@ -1,15 +1,18 @@
 CREATE DATABASE ScheduleAppDb_Dev;
-GO
+
 
 USE ScheduleAppDb_Dev;
-GO
 
 CREATE TABLE Roles
 (
     Id UNIQUEIDENTIFIER PRIMARY KEY,
     Name NVARCHAR(50) NOT NULL UNIQUE
 );
-GO
+CREATE TABLE Materias (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(200) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1
+);
 
 CREATE TABLE Users
 (
@@ -27,13 +30,12 @@ CREATE TABLE Users
         FOREIGN KEY (RoleId)
         REFERENCES Roles(Id)
 );
-GO
 
 INSERT INTO Roles (Id, Name)
 VALUES
 ('11111111-1111-1111-1111-111111111111', 'Administrador'),
 ('22222222-2222-2222-2222-222222222222', 'Coordinador');
-GO
+
 
 INSERT INTO Users
 (
@@ -63,4 +65,3 @@ VALUES
     1,
     GETUTCDATE()
 );
-GO
