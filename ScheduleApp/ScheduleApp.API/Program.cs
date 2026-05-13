@@ -59,6 +59,8 @@ builder.Services.AddScoped<AuthService>();                           // logica d
 
 builder.Services.AddScoped<IUserService, UserService>();
 
+builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
+builder.Services.AddScoped<IMateriaService, MateriaService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
