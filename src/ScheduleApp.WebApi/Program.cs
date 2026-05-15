@@ -15,6 +15,7 @@ using ScheduleApp.Infrastructure.Services;
 using System.Text;
 
 // Cargar variables del archivo .env desde la raíz del backend
+
 Env.Load(Path.Combine(AppContext.BaseDirectory, "../../../../../.env"));
 
 var builder = WebApplication.CreateBuilder(args);
