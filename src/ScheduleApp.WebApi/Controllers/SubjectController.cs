@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.Interfaces;
+using ScheduleApp.Application.DTOs;
 
 namespace ScheduleApp.WebApi.Controllers;
 
@@ -21,6 +22,34 @@ public class SubjectController : ControllerBase
         {
             await _subjectService.DeleteSubjectAsync(id);
             return Ok("Subject deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateSubject(CreateSubjectDto dto)
+    {
+        try
+        {
+            await _subjectService.CreateSubjectAsync(dto);
+            return Ok("Subject created successfully");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateSubject(Guid id, UpdateSubjectDto dto)
+    {
+        try
+        {
+            await _subjectService.UpdateSubjectAsync(id, dto);
+            return Ok("Subject updated successfully");
         }
         catch (Exception ex)
         {
