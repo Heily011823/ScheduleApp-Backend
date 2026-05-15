@@ -1,7 +1,6 @@
 ﻿// ScheduleApp.WebApi/Program.cs
-
-/// Autor: Mateo Quintero
-/// Version: 0.1
+/// Autor: Mateo Quintero (Modificado para usar appsettings)
+/// Version: 0.2
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -15,9 +14,32 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Leer variables desde appsettings.json o appsettings.Development.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+// Validaciones (Mantenemos la seguridad original)
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en el appsettings.");
+if (string.IsNullOrWhiteSpace(jwtSecret))
+    throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
+if (string.IsNullOrWhiteSpace(jwtIssuer))
+    throw new InvalidOperationException("Falta la variable 'Jwt:Issuer' en el appsettings.");
+if (string.IsNullOrWhiteSpace(jwtAudience))
+    throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
+
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
+
+// Controllers
+builder.Services.AddControllers();
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -27,11 +49,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!)),
+                Encoding.UTF8.GetBytes(jwtSecret)),
             ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidAudience = jwtAudience,
             ClockSkew = TimeSpan.Zero
         };
     });
@@ -42,10 +64,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<AuthService>();
-
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ISubjectService, SubjectService>();
-
 builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
@@ -66,7 +86,5 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
