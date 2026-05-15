@@ -9,4 +9,8 @@ public interface ISubjectRepository
     Task<List<Subject>> GetActiveAsync();
 
     Task UpdateAsync(Subject subject);
+
+    Task CreateAsync(Subject subject);
+
+    Task<Subject?> GetByCodeAsync(string code);
 }

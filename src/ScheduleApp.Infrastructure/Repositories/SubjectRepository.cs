@@ -32,4 +32,16 @@ public class SubjectRepository : ISubjectRepository
         _context.Subjects.Update(subject);
         await _context.SaveChangesAsync();
     }
+
+    public async Task CreateAsync(Subject subject)
+    {
+        await _context.Subjects.AddAsync(subject);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<Subject?> GetByCodeAsync(string code)
+    {
+        return await _context.Subjects
+            .FirstOrDefaultAsync(s => s.Code == code);
+    }
 }
