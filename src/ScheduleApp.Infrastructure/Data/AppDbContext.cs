@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Assignment> Assignments => Set<Assignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,34 @@ public class AppDbContext : DbContext
 
             entity.Property(s => s.UpdatedAt)
                 .IsRequired(false);
+        });
+
+        modelBuilder.Entity<Assignment>(entity =>
+        {
+            entity.ToTable("Assignments");
+
+            entity.HasKey(a => a.Id);
+
+            entity.Property(a => a.Teacher)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(a => a.Subject)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(a => a.Classroom)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(a => a.Day)
+                .IsRequired();
+
+            entity.Property(a => a.StartTime)
+                .IsRequired();
+
+            entity.Property(a => a.EndTime)
+                .IsRequired();
         });
     }
 }
