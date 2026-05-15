@@ -11,21 +11,21 @@ namespace ScheduleApp.Infrastructure.Services;
 public class JwtService : IJwtService
 {
     private readonly int _expirationMinutes = 60;
+    private readonly string _jwtSecret;
+    private readonly string _jwtIssuer;
+    private readonly string _jwtAudience;
+
+    // El constructor ahora recibe las variables ya validadas desde Program.cs
+    public JwtService(string jwtSecret, string jwtIssuer, string jwtAudience)
+    {
+        _jwtSecret = jwtSecret ?? throw new ArgumentNullException(nameof(jwtSecret));
+        _jwtIssuer = jwtIssuer ?? throw new ArgumentNullException(nameof(jwtIssuer));
+        _jwtAudience = jwtAudience ?? throw new ArgumentNullException(nameof(jwtAudience));
+    }
 
     public string GenerateToken(User user)
     {
-        var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
-        var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-        var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
-
-        if (string.IsNullOrWhiteSpace(jwtSecret))
-            throw new InvalidOperationException("Falta la variable JWT_SECRET en el archivo .env");
-
-        if (string.IsNullOrWhiteSpace(jwtIssuer))
-            throw new InvalidOperationException("Falta la variable JWT_ISSUER en el archivo .env");
-
-        if (string.IsNullOrWhiteSpace(jwtAudience))
-            throw new InvalidOperationException("Falta la variable JWT_AUDIENCE en el archivo .env");
+        // Eliminamos las lecturas de Environment.GetEnvironmentVariable y sus ifs redundantes
 
         var claims = new[]
         {
@@ -36,11 +36,11 @@ public class JwtService : IJwtService
         };
 
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtSecret));
+            Encoding.UTF8.GetBytes(_jwtSecret)); 
 
         var token = new JwtSecurityToken(
-            issuer: jwtIssuer,
-            audience: jwtAudience,
+            issuer: _jwtIssuer,              
+            audience: _jwtAudience,         
             claims: claims,
             expires: GetExpiration(),
             signingCredentials: new SigningCredentials(

@@ -1,6 +1,4 @@
 ﻿// ScheduleApp.WebApi/Program.cs
-/// Autor: Mateo Quintero (Modificado para usar appsettings)
-/// Version: 0.2
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -61,7 +59,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Dependency injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
+
+// SOLUCIÓN AQUÍ: Instanciamos JwtService pasando las variables validadas al constructor
+builder.Services.AddScoped<IJwtService>(provider =>
+    new JwtService(jwtSecret, jwtIssuer, jwtAudience));
+
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
