@@ -1,25 +1,47 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ScheduleApp.Application.Services;
+using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 
-namespace ScheduleApp.WebApi.Controllers;
-
-[ApiController]
-[Route("api/assignments")]
-public class AssignmentController : ControllerBase
+namespace ScheduleApp.WebApi.Controllers
 {
-    private static readonly AvailabilityService service = new();
-
-    [HttpPost]
-    public IActionResult CreateAssignment([FromBody] Assignment assignment)
+    [ApiController]
+    [Route("api/assignments")]
+    public class AssignmentController : ControllerBase
     {
-        var result = service.SaveAssignment(assignment);
+        private readonly IAssignmentService _assignmentService;
 
-        if (result.Contains("already has") || result.Contains("occupied"))
+        public AssignmentController(IAssignmentService assignmentService)
         {
-            return BadRequest(result);
+            _assignmentService = assignmentService;
         }
 
-        return Ok(result);
+        [HttpPost]
+        public async Task<IActionResult> SaveAssignment([FromBody] Assignment assignment)
+        {
+            try
+            {
+                await _assignmentService.SaveAssignmentAsync(assignment);
+
+                return Ok(new
+                {
+                    message = "Assignment saved successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAssignments()
+        {
+            var assignments = await _assignmentService.GetAssignmentsAsync();
+
+            return Ok(assignments);
+        }
     }
 }
