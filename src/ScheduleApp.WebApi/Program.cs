@@ -1,9 +1,7 @@
 ﻿// ScheduleApp.WebApi/Program.cs
+/// Autor: Mateo Quintero (Modificado para usar appsettings)
+/// Version: 0.2
 
-/// Autor: Mateo Quintero
-/// Version: 0.1
-
-using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -14,30 +12,23 @@ using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
 using System.Text;
 
-// Cargar variables del archivo .env desde la raíz del backend
-
-Env.TraversePath().Load();
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Variables de entorno
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION");
-var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+// Leer variables desde appsettings.json o appsettings.Development.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-// Validaciones
+// Validaciones (Mantenemos la seguridad original)
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Falta la variable DB_CONNECTION en el archivo .env");
-
+    throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en el appsettings.");
 if (string.IsNullOrWhiteSpace(jwtSecret))
-    throw new InvalidOperationException("Falta la variable JWT_SECRET en el archivo .env");
-
+    throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
 if (string.IsNullOrWhiteSpace(jwtIssuer))
-    throw new InvalidOperationException("Falta la variable JWT_ISSUER en el archivo .env");
-
+    throw new InvalidOperationException("Falta la variable 'Jwt:Issuer' en el appsettings.");
 if (string.IsNullOrWhiteSpace(jwtAudience))
-    throw new InvalidOperationException("Falta la variable JWT_AUDIENCE en el archivo .env");
+    throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -73,10 +64,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<AuthService>();
-
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ISubjectService, SubjectService>();
-
 builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
@@ -97,7 +86,5 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
