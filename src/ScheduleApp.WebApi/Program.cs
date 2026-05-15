@@ -16,7 +16,7 @@ using System.Text;
 
 // Cargar variables del archivo .env desde la raíz del backend
 
-Env.Load(Path.Combine(AppContext.BaseDirectory, "../../../../../.env"));
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
