@@ -18,8 +18,9 @@ public class AppDbContext : DbContext
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
+    public DbSet<Classroom> Classrooms { get; set; }
 
-    // NUEVOS DBSET PARA LA NORMALIZACIÓN
+  
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
     public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
 
@@ -332,5 +333,18 @@ public class AppDbContext : DbContext
                 .HasForeignKey(ts => ts.SubjectId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        modelBuilder.Entity<Classroom>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.Code).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Building).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Type).HasMaxLength(50).IsRequired();
+        });
     }
+
+
+
 }
