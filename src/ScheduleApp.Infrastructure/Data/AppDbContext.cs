@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Domain.Entities;
+using System;
 
+// Ruta recomendada: src/ScheduleApp.Infrastructure/Data/AppDbContext.cs
 namespace ScheduleApp.Infrastructure.Data;
 
 public class AppDbContext : DbContext
@@ -14,12 +16,18 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
-    
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
 
+    // NUEVOS DBSET PARA LA NORMALIZACIÓN
+    public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
+    public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // ==========================================
+        // CONFIGURACIÓN: ROLE
+        // ==========================================
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasKey(r => r.Id);
@@ -45,6 +53,9 @@ public class AppDbContext : DbContext
             );
         });
 
+        // ==========================================
+        // CONFIGURACIÓN: USER
+        // ==========================================
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);
@@ -87,6 +98,9 @@ public class AppDbContext : DbContext
                 .IsRequired();
         });
 
+        // ==========================================
+        // CONFIGURACIÓN: SUBJECT
+        // ==========================================
         modelBuilder.Entity<Subject>(entity =>
         {
             entity.ToTable("Subjects");
@@ -128,6 +142,9 @@ public class AppDbContext : DbContext
                 .IsRequired(false);
         });
 
+        // ==========================================
+        // CONFIGURACIÓN: ASSIGNMENT
+        // ==========================================
         modelBuilder.Entity<Assignment>(entity =>
         {
             entity.ToTable("Assignments");
@@ -156,11 +173,9 @@ public class AppDbContext : DbContext
                 .IsRequired();
         });
 
-
-        /// Autor:  Mateo Quintero 
-        /// Version: 0.2
-        /// rama: 33-Reglas-tapsi
-
+        // ==========================================
+        // CONFIGURACIÓN: TAPSI RULES
+        // ==========================================
         modelBuilder.Entity<TapsiRule>(entity =>
         {
             entity.ToTable("TapsiRules");
@@ -188,7 +203,6 @@ public class AppDbContext : DbContext
             entity.Property(t => t.UpdatedAt)
                 .IsRequired(false);
 
-            // Datos iniciales de reglas TAPSI
             entity.HasData(
                 new TapsiRule
                 {
@@ -220,9 +234,9 @@ public class AppDbContext : DbContext
             );
         });
 
-        /// Autor:  Mateo Quintero 
-        /// Version: 0.2
-        /// rama: 96-Crud-docentes
+        // ==========================================
+        // CONFIGURACIÓN: TEACHERS (¡Completamente Normalizado!)
+        // ==========================================
         modelBuilder.Entity<Teacher>(entity =>
         {
             entity.ToTable("Teachers");
@@ -231,9 +245,13 @@ public class AppDbContext : DbContext
             entity.HasIndex(t => t.Email).IsUnique();
             entity.HasIndex(t => t.IdentityDocument).IsUnique();
 
-            entity.Property(t => t.FullName)
+            entity.Property(t => t.FirstName)
                 .IsRequired()
-                .HasMaxLength(100);
+                .HasMaxLength(50);
+
+            entity.Property(t => t.LastName)
+                .IsRequired()
+                .HasMaxLength(50);
 
             entity.Property(t => t.Email)
                 .IsRequired()
@@ -247,9 +265,8 @@ public class AppDbContext : DbContext
                 .IsRequired(false)
                 .HasMaxLength(20);
 
-            entity.Property(t => t.Specialty)
-                .IsRequired()
-                .HasMaxLength(100);
+            // SE ELIMINARON: AcademicProgram, PreferredSubject y Availability de aquí.
+            // Ahora la información vive de forma estructurada en sus respectivas tablas relaciones.
 
             entity.Property(t => t.IsActive)
                 .IsRequired()
@@ -260,6 +277,60 @@ public class AppDbContext : DbContext
 
             entity.Property(t => t.UpdatedAt)
                 .IsRequired(false);
+        });
+
+        // ==========================================
+        // CONFIGURACIÓN: TEACHER AVAILABILITY (Relación 1 a Muchos)
+        // ==========================================
+        modelBuilder.Entity<TeacherAvailability>(entity =>
+        {
+            entity.ToTable("TeacherAvailabilities");
+            entity.HasKey(ta => ta.Id);
+
+            entity.Property(ta => ta.Day)
+                .IsRequired();
+
+            entity.Property(ta => ta.StartTime)
+                .IsRequired();
+
+            entity.Property(ta => ta.EndTime)
+                .IsRequired();
+
+            entity.Property(ta => ta.MaxTeachingHours)
+                .IsRequired();
+
+            // Configuración de la llave foránea con borrado en cascada
+            entity.HasOne(ta => ta.Teacher)
+                .WithMany(t => t.Availabilities)
+                .HasForeignKey(ta => ta.TeacherId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ==========================================
+        // CONFIGURACIÓN: TEACHER SUBJECT (Relación Muchos a Muchos Intermedia)
+        // ==========================================
+        modelBuilder.Entity<TeacherSubject>(entity =>
+        {
+            entity.ToTable("TeacherSubjects");
+
+            // Llave primaria compuesta reglamentaria
+            entity.HasKey(ts => new { ts.TeacherId, ts.SubjectId });
+
+            entity.Property(ts => ts.ContractType)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            // Relación inversa hacia Teacher
+            entity.HasOne(ts => ts.Teacher)
+                .WithMany(t => t.TeacherSubjects)
+                .HasForeignKey(ts => ts.TeacherId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relación inversa hacia la tabla global existente de Subjects
+            entity.HasOne(ts => ts.Subject)
+                .WithMany()
+                .HasForeignKey(ts => ts.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

@@ -1,6 +1,4 @@
-﻿// ScheduleApp.WebApi/Program.cs
-
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ScheduleApp.Application.Interfaces;
@@ -8,6 +6,7 @@ using ScheduleApp.Application.Services;
 using ScheduleApp.Infrastructure.Data;
 using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +17,7 @@ var jwtSecret = builder.Configuration["Jwt:Secret"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-// Validaciones (Mantenemos la seguridad original)
+// Validaciones de seguridad
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en el appsettings.");
 if (string.IsNullOrWhiteSpace(jwtSecret))
@@ -36,7 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers();
 
 // Swagger
-//builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
@@ -46,24 +45,22 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Teacher module
-
+// Módulo de Docentes
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
 
-// TAPSI rules
+// Reglas TAPSI
 builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
 builder.Services.AddScoped<TapsiService>();
 
-// Authentication
+// Autenticación JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSecret)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
             ValidateAudience = true,
@@ -72,16 +69,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Dependency injection
+// Inyección de dependencias de Usuarios y Auth
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-
-// SOLUCIÓN AQUÍ: Instanciamos JwtService pasando las variables validadas al constructor
-builder.Services.AddScoped<IJwtService>(provider =>
-    new JwtService(jwtSecret, jwtIssuer, jwtAudience));
-
+builder.Services.AddScoped<IJwtService>(provider => new JwtService(jwtSecret, jwtIssuer, jwtAudience));
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<AuthService>();
+
+// Módulo de Materias y Asignaciones
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ISubjectService, SubjectService>();
 builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
@@ -89,15 +84,8 @@ builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
 var app = builder.Build();
 
-// Automatic migrations
-//using (var scope = app.Services.CreateScope())
-//{
-  //  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //db.Database.Migrate();
-//}
-
+// Configuración del Pipeline HTTP
 app.UseSwagger();
-
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "ScheduleApp API V1");
@@ -106,5 +94,7 @@ app.UseSwaggerUI(options =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();

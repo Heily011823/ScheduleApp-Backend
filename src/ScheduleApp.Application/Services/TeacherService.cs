@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-
-// src/ScheduleApp.Application/Services/TeacherService.cs
-namespace ScheduleApp.Application.Services;
-
+using System.Linq;
+using System.Threading.Tasks;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 
+// Ruta recomendada: src/ScheduleApp.Application/Services/TeacherService.cs
+namespace ScheduleApp.Application.Services;
+
 /// <summary>
-/// Servicio con la lógica de negocio del módulo de docentes.
-/// Gestiona CRUD completo con validaciones de unicidad.
+/// Implementación de la lógica de negocio para la gestión de docentes.
 /// </summary>
-/// Autor:  Mateo Quintero 
-/// Version: 0.2
-/// rama: 96-Crud-docentes
 public class TeacherService : ITeacherService
 {
     private readonly ITeacherRepository _teacherRepository;
@@ -25,121 +21,96 @@ public class TeacherService : ITeacherService
         _teacherRepository = teacherRepository;
     }
 
-    /// <summary>
-    /// Retorna docentes filtrados por nombre, especialidad y/o estado.
-    /// Si no se pasan filtros, retorna todos los docentes.
-    /// </summary>
-    public async Task<IEnumerable<TeacherResponseDto>> SearchAsync(
-        string? name,
-        string? specialty,
-        bool? isActive)
+    public async Task<IEnumerable<TeacherResponseDto>> SearchAsync(string? name, string? academicProgram, string? status)
     {
-        var teachers = await _teacherRepository.SearchAsync(
-            name, specialty, isActive);
-        return teachers.Select(MapToDto);
+        bool? isActiveFilter = null;
+        if (!string.IsNullOrEmpty(status))
+        {
+            isActiveFilter = status.Equals("active", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Buscamos en el repositorio usando los filtros correspondientes
+        var teachers = await _teacherRepository.SearchAsync(name, isActiveFilter);
+
+        // Si se especificó filtro de programa académico, filtramos en memoria
+        if (!string.IsNullOrEmpty(academicProgram))
+        {
+            teachers = teachers.Where(t => t.AcademicProgram.Contains(academicProgram, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Proyectamos las entidades de Dominio a DTOs de respuesta
+        return teachers.Select(t => MapToResponseDto(t));
     }
 
-    /// <summary>
-    /// Retorna un docente por su ID.
-    /// Retorna null si no existe.
-    /// </summary>
     public async Task<TeacherResponseDto?> GetByIdAsync(Guid id)
     {
         var teacher = await _teacherRepository.GetByIdAsync(id);
-        return teacher is null ? null : MapToDto(teacher);
+        if (teacher == null) return null;
+
+        return MapToResponseDto(teacher);
     }
 
-    /// <summary>
-    /// Crea un nuevo docente validando que email y documento sean únicos.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">
-    /// Si ya existe un docente con el mismo email o documento.
-    /// </exception>
     public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
     {
-        // Validar email único
-        var existingByEmail = await _teacherRepository
-            .GetByEmailAsync(dto.Email.ToLower().Trim());
-        if (existingByEmail is not null)
-            throw new InvalidOperationException(
-                $"Ya existe un docente registrado con el email '{dto.Email}'.");
+        // Validación de negocio básica: Evitar correos o documentos duplicados
+        var existingEmail = await _teacherRepository.GetByEmailAsync(dto.Email);
+        if (existingEmail != null)
+            throw new InvalidOperationException("El correo electrónico ya está registrado por otro docente.");
 
-        // Validar documento único
-        var existingByDoc = await _teacherRepository
-            .GetByIdentityDocumentAsync(dto.IdentityDocument.Trim());
-        if (existingByDoc is not null)
-            throw new InvalidOperationException(
-                $"Ya existe un docente registrado con el documento '{dto.IdentityDocument}'.");
+        var existingDoc = await _teacherRepository.GetByIdentityDocumentAsync(dto.IdentityDocument);
+        if (existingDoc != null)
+            throw new InvalidOperationException("El documento de identidad ya está registrado.");
 
+        // Mapeamos el DTO de creación a nuestra Entidad de Dominio real
         var teacher = new Teacher
         {
             Id = Guid.NewGuid(),
-            FullName = dto.FullName.Trim(),
-            Email = dto.Email.ToLower().Trim(),
-            IdentityDocument = dto.IdentityDocument.Trim(),
-            PhoneNumber = dto.PhoneNumber.Trim(),
-            Specialty = dto.Specialty.Trim(),
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Email = dto.Email,
+            IdentityDocument = dto.IdentityDocument,
+            PhoneNumber = dto.PhoneNumber,
+            // Guardamos las especialidades/contratos dentro de los campos de tu entidad de dominio
+            AcademicProgram = dto.ContractType,
+            PreferredSubject = dto.Specialties,
+            Availability = $"Horas asignadas: {dto.TeachingHours}",
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
         await _teacherRepository.AddAsync(teacher);
-        return MapToDto(teacher);
+
+        return MapToResponseDto(teacher);
     }
 
-    /// <summary>
-    /// Actualiza los datos de un docente existente.
-    /// Valida unicidad de email y documento si cambian.
-    /// Retorna null si el docente no existe.
-    /// </summary>
     public async Task<TeacherResponseDto?> UpdateAsync(Guid id, UpdateTeacherDto dto)
     {
         var teacher = await _teacherRepository.GetByIdAsync(id);
-        if (teacher is null) return null;
+        if (teacher == null) return null;
 
-        // Validar email único si cambió
-        var normalizedEmail = dto.Email.ToLower().Trim();
-        if (teacher.Email != normalizedEmail)
-        {
-            var existing = await _teacherRepository.GetByEmailAsync(normalizedEmail);
-            if (existing is not null && existing.Id != id)
-                throw new InvalidOperationException(
-                    $"Ya existe otro docente con el email '{dto.Email}'.");
-        }
-
-        // Validar documento único si cambió
-        var normalizedDoc = dto.IdentityDocument.Trim();
-        if (teacher.IdentityDocument != normalizedDoc)
-        {
-            var existing = await _teacherRepository
-                .GetByIdentityDocumentAsync(normalizedDoc);
-            if (existing is not null && existing.Id != id)
-                throw new InvalidOperationException(
-                    $"Ya existe otro docente con el documento '{dto.IdentityDocument}'.");
-        }
-
-        teacher.FullName = dto.FullName.Trim();
-        teacher.Email = normalizedEmail;
-        teacher.IdentityDocument = normalizedDoc;
-        teacher.PhoneNumber = dto.PhoneNumber.Trim();
-        teacher.Specialty = dto.Specialty.Trim();
+        // Actualizamos los campos de la entidad con los nuevos datos del DTO
+        teacher.FirstName = dto.FirstName;
+        teacher.LastName = dto.LastName;
+        teacher.Email = dto.Email;
+        teacher.IdentityDocument = dto.IdentityDocument;
+        teacher.PhoneNumber = dto.PhoneNumber;
+        teacher.PreferredSubject = dto.Specialties;
+        teacher.AcademicProgram = dto.ContractType;
+        teacher.Availability = $"Horas asignadas: {dto.TeachingHours}";
         teacher.IsActive = dto.IsActive;
         teacher.UpdatedAt = DateTime.UtcNow;
 
         await _teacherRepository.UpdateAsync(teacher);
-        return MapToDto(teacher);
+
+        return MapToResponseDto(teacher);
     }
 
-    /// <summary>
-    /// Desactiva un docente (eliminación lógica).
-    /// No se elimina físicamente para preservar historial de asignaciones.
-    /// Retorna false si el docente no existe.
-    /// </summary>
     public async Task<bool> DeleteAsync(Guid id)
     {
         var teacher = await _teacherRepository.GetByIdAsync(id);
-        if (teacher is null) return false;
+        if (teacher == null) return false;
 
+        // Aplicamos un borrado lógico (cambiar estado a inactivo) en lugar de un borrado físico duro
         teacher.IsActive = false;
         teacher.UpdatedAt = DateTime.UtcNow;
 
@@ -147,17 +118,28 @@ public class TeacherService : ITeacherService
         return true;
     }
 
-    /// <summary>Mapea la entidad Teacher a su DTO de respuesta.</summary>
-    private static TeacherResponseDto MapToDto(Teacher teacher) => new()
+    /// <summary>
+    /// Método privado auxiliar para mapear una entidad 'Teacher' a un 'TeacherResponseDto'.
+    /// </summary>
+    private static TeacherResponseDto MapToResponseDto(Teacher teacher)
     {
-        Id = teacher.Id,
-        FullName = teacher.FullName,
-        Email = teacher.Email,
-        IdentityDocument = teacher.IdentityDocument,
-        PhoneNumber = teacher.PhoneNumber,
-        Specialty = teacher.Specialty,
-        IsActive = teacher.IsActive,
-        CreatedAt = teacher.CreatedAt,
-        UpdatedAt = teacher.UpdatedAt
-    };
+        return new TeacherResponseDto
+        {
+            Id = teacher.Id,
+            FirstName = teacher.FirstName,
+            LastName = teacher.LastName,
+            Email = teacher.Email,
+            IdentityDocument = teacher.IdentityDocument,
+            PhoneNumber = teacher.PhoneNumber,
+            Specialties = teacher.PreferredSubject,
+            ContractType = teacher.AcademicProgram,
+            IsActive = teacher.IsActive,
+            CreatedAt = teacher.CreatedAt,
+            UpdatedAt = teacher.UpdatedAt,
+            // Extraemos las horas del campo string de disponibilidad si es posible, por defecto 0
+            TeachingHours = teacher.Availability.Contains("Horas asignadas:")
+                ? int.Parse(string.Concat(teacher.Availability.Where(char.IsDigit)))
+                : 0
+        };
+    }
 }

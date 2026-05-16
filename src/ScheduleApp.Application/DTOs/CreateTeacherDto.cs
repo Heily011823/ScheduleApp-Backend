@@ -2,32 +2,44 @@
 using System.Collections.Generic;
 using System.Text;
 
-// src/ScheduleApp.Application/DTOs/CreateTeacherDto.cs
+// Ruta recomendada: src/ScheduleApp.Application/DTOs/CreateTeacherDto.cs
 namespace ScheduleApp.Application.DTOs;
-
-
-/// Autor:  Mateo Quintero 
-/// Version: 0.2
-/// rama: 96-Crud-docentes
 
 /// <summary>
 /// DTO para registrar un nuevo docente en el sistema.
-/// Todos los campos son requeridos excepto PhoneNumber.
+/// Contiene la información básica requerida por el coordinador.
 /// </summary>
 public class CreateTeacherDto
 {
-    /// <summary>Nombre completo del docente.</summary>
-    public string FullName { get; set; } = string.Empty;
+    /// <summary>Nombres del docente.</summary>
+    public string FirstName { get; set; } = string.Empty;
+
+    /// <summary>Apellidos del docente.</summary>
+    public string LastName { get; set; } = string.Empty;
 
     /// <summary>Correo electrónico institucional único.</summary>
     public string Email { get; set; } = string.Empty;
 
-    /// <summary>Número de documento de identidad único.</summary>
+    /// <summary>Documento de identidad único.</summary>
     public string IdentityDocument { get; set; } = string.Empty;
 
-    /// <summary>Número de teléfono de contacto (opcional).</summary>
+    /// <summary>Número telefónico de contacto.</summary>
     public string PhoneNumber { get; set; } = string.Empty;
 
-    /// <summary>Especialidad académica. Ej: "Matemáticas".</summary>
-    public string Specialty { get; set; } = string.Empty;
+    /// <summary>
+    /// Especialidades del docente.
+    /// Ejemplo: Matemáticas, Programación.
+    /// </summary>
+    public string Specialties { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Cantidad de horas disponibles para dictar clases.
+    /// </summary>
+    public int TeachingHours { get; set; }
+
+    /// <summary>
+    /// Tipo de contrato del docente.
+    /// Ejemplo: Tiempo completo, Cátedra.
+    /// </summary>
+    public string ContractType { get; set; } = string.Empty;
 }
