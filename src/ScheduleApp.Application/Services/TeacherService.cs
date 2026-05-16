@@ -10,15 +10,17 @@ using ScheduleApp.Domain.Entities;
 namespace ScheduleApp.Application.Services;
 
 /// <summary>
-/// Implementación de la lógica de negocio para la gestión de docentes.
+/// Implementación de la lógica de negocio para la gestión de docentes (Modelo Normalizado).
 /// </summary>
 public class TeacherService : ITeacherService
 {
     private readonly ITeacherRepository _teacherRepository;
+    private readonly ISubjectRepository _subjectRepository; // Agregado para validar la existencia de materias si es necesario
 
-    public TeacherService(ITeacherRepository teacherRepository)
+    public TeacherService(ITeacherRepository teacherRepository, ISubjectRepository subjectRepository)
     {
         _teacherRepository = teacherRepository;
+        _subjectRepository = subjectRepository;
     }
 
     public async Task<IEnumerable<TeacherResponseDto>> SearchAsync(string? name, string? academicProgram, string? status)
@@ -29,16 +31,16 @@ public class TeacherService : ITeacherService
             isActiveFilter = status.Equals("active", StringComparison.OrdinalIgnoreCase);
         }
 
-        // Buscamos en el repositorio usando los filtros correspondientes
+        // Buscamos los docentes en el repositorio
         var teachers = await _teacherRepository.SearchAsync(name, isActiveFilter);
 
-        // Si se especificó filtro de programa académico, filtramos en memoria
+        // Filtro por programa académico integrado mediante las tablas relacionales normalizadas
         if (!string.IsNullOrEmpty(academicProgram))
         {
-            teachers = teachers.Where(t => t.AcademicProgram.Contains(academicProgram, StringComparison.OrdinalIgnoreCase));
+            teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
+                ts.ContractType.Contains(academicProgram, StringComparison.OrdinalIgnoreCase)));
         }
 
-        // Proyectamos las entidades de Dominio a DTOs de respuesta
         return teachers.Select(t => MapToResponseDto(t));
     }
 
@@ -52,7 +54,7 @@ public class TeacherService : ITeacherService
 
     public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
     {
-        // Validación de negocio básica: Evitar correos o documentos duplicados
+        // Validación de duplicados
         var existingEmail = await _teacherRepository.GetByEmailAsync(dto.Email);
         if (existingEmail != null)
             throw new InvalidOperationException("El correo electrónico ya está registrado por otro docente.");
@@ -61,22 +63,44 @@ public class TeacherService : ITeacherService
         if (existingDoc != null)
             throw new InvalidOperationException("El documento de identidad ya está registrado.");
 
-        // Mapeamos el DTO de creación a nuestra Entidad de Dominio real
+        var teacherId = Guid.NewGuid();
+
+        // 1. Instanciamos la entidad principal de Dominio
         var teacher = new Teacher
         {
-            Id = Guid.NewGuid(),
+            Id = teacherId,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             Email = dto.Email,
             IdentityDocument = dto.IdentityDocument,
             PhoneNumber = dto.PhoneNumber,
-            // Guardamos las especialidades/contratos dentro de los campos de tu entidad de dominio
-            AcademicProgram = dto.ContractType,
-            PreferredSubject = dto.Specialties,
-            Availability = $"Horas asignadas: {dto.TeachingHours}",
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
+
+        // 2. NORMALIZACIÓN: Mapeamos la disponibilidad (1 a Muchos) de forma atómica
+        teacher.Availabilities.Add(new TeacherAvailability
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacherId,
+            Day = DayOfWeek.Monday, // Por defecto asignamos días hábiles base o extendibles según requiera la lógica
+            StartTime = TimeSpan.FromHours(7),  // 07:00 AM asignado por defecto
+            EndTime = TimeSpan.FromHours(18),   // 06:00 PM asignado por defecto
+            MaxTeachingHours = dto.TeachingHours // Guardamos las horas reales numéricas de forma limpia
+        });
+
+        // 3. NORMALIZACIÓN: Mapeamos la relación N:M con materias mediante la entidad intermedia
+        // Buscamos si existe una materia que coincida con la especialidad para asociar un ID real
+        // LÍNEA CORREGIDA:
+        var subjects = await _subjectRepository.SearchAsync(dto.Specialties, null, true);
+        var subjectBaseId = subjects.FirstOrDefault()?.Id ?? Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"); // ID semilla o fallback
+
+        teacher.TeacherSubjects.Add(new TeacherSubject
+        {
+            TeacherId = teacherId,
+            SubjectId = subjectBaseId,
+            ContractType = dto.ContractType // Guardamos la especialidad/programa de forma estructurada
+        });
 
         await _teacherRepository.AddAsync(teacher);
 
@@ -88,17 +112,28 @@ public class TeacherService : ITeacherService
         var teacher = await _teacherRepository.GetByIdAsync(id);
         if (teacher == null) return null;
 
-        // Actualizamos los campos de la entidad con los nuevos datos del DTO
+        // Actualizamos los campos directos y planos de la entidad raíz
         teacher.FirstName = dto.FirstName;
         teacher.LastName = dto.LastName;
         teacher.Email = dto.Email;
         teacher.IdentityDocument = dto.IdentityDocument;
         teacher.PhoneNumber = dto.PhoneNumber;
-        teacher.PreferredSubject = dto.Specialties;
-        teacher.AcademicProgram = dto.ContractType;
-        teacher.Availability = $"Horas asignadas: {dto.TeachingHours}";
         teacher.IsActive = dto.IsActive;
         teacher.UpdatedAt = DateTime.UtcNow;
+
+        // Actualización de la estructura normalizada de disponibilidad
+        var availability = teacher.Availabilities.FirstOrDefault();
+        if (availability != null)
+        {
+            availability.MaxTeachingHours = dto.TeachingHours;
+        }
+
+        // Actualización de la tabla intermedia relacional
+        var teacherSubject = teacher.TeacherSubjects.FirstOrDefault();
+        if (teacherSubject != null)
+        {
+            teacherSubject.ContractType = dto.ContractType;
+        }
 
         await _teacherRepository.UpdateAsync(teacher);
 
@@ -110,7 +145,7 @@ public class TeacherService : ITeacherService
         var teacher = await _teacherRepository.GetByIdAsync(id);
         if (teacher == null) return false;
 
-        // Aplicamos un borrado lógico (cambiar estado a inactivo) en lugar de un borrado físico duro
+        // Borrado lógico reglamentario
         teacher.IsActive = false;
         teacher.UpdatedAt = DateTime.UtcNow;
 
@@ -119,10 +154,13 @@ public class TeacherService : ITeacherService
     }
 
     /// <summary>
-    /// Método privado auxiliar para mapear una entidad 'Teacher' a un 'TeacherResponseDto'.
+    /// Mapea de forma segura los objetos hijos relacionales hacia el DTO plano de salida.
     /// </summary>
     private static TeacherResponseDto MapToResponseDto(Teacher teacher)
     {
+        var mainSubject = teacher.TeacherSubjects.FirstOrDefault();
+        var mainAvailability = teacher.Availabilities.FirstOrDefault();
+
         return new TeacherResponseDto
         {
             Id = teacher.Id,
@@ -131,15 +169,14 @@ public class TeacherService : ITeacherService
             Email = teacher.Email,
             IdentityDocument = teacher.IdentityDocument,
             PhoneNumber = teacher.PhoneNumber,
-            Specialties = teacher.PreferredSubject,
-            ContractType = teacher.AcademicProgram,
             IsActive = teacher.IsActive,
             CreatedAt = teacher.CreatedAt,
             UpdatedAt = teacher.UpdatedAt,
-            // Extraemos las horas del campo string de disponibilidad si es posible, por defecto 0
-            TeachingHours = teacher.Availability.Contains("Horas asignadas:")
-                ? int.Parse(string.Concat(teacher.Availability.Where(char.IsDigit)))
-                : 0
+
+            // Extraemos los valores desde sus respectivas relaciones atómicas normalizadas
+            ContractType = mainSubject != null ? mainSubject.ContractType : "No asignado",
+            Specialties = mainSubject != null && mainSubject.Subject != null ? mainSubject.Subject.Name : "General",
+            TeachingHours = mainAvailability != null ? mainAvailability.MaxTeachingHours : 0
         };
     }
 }
