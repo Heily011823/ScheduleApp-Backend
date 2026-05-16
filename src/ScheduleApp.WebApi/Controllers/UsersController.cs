@@ -4,9 +4,8 @@ using ScheduleApp.Application.Interfaces;
 
 namespace ScheduleApp.API.Controllers
 {
-    /// <summary>
-    /// Controlador de gestión de usuarios.
-    /// </summary>
+    // Controlador de gestion de usuarios.
+    // Expone los endpoints REST para CRUD y consultas (con paginacion).
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
@@ -18,35 +17,32 @@ namespace ScheduleApp.API.Controllers
             _userService = userService;
         }
 
-        /// <summary>
-        /// Lista usuarios.
-        /// </summary>
+        // GET /api/Users (HU-58) - Listado paginado de usuarios con filtros opcionales.
+        // Conserva los filtros previos (name, role, isActive) y agrega page/pageSize.
+        // Retorna 200 con PagedResultDto que incluye items, totalCount, page, pageSize, totalPages.
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers(
+        public async Task<ActionResult<PagedResultDto<UserResponseDto>>> GetUsers(
             [FromQuery] string? name,
             [FromQuery] string? role,
-            [FromQuery] bool? isActive)
+            [FromQuery] bool? isActive,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var users = await _userService.SearchUsersAsync(
+                // Sanitizamos valores fuera de rango
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
+
+                var result = await _userService.GetPagedUsersAsync(
                     name,
                     role,
-                    isActive);
+                    isActive,
+                    page,
+                    pageSize);
 
-                var response = users.Select(user => new UserResponseDto
-                {
-                    Id = user.Id,
-                    FullName = user.FullName,
-                    Email = user.Email,
-                    Username = user.Username,
-                    IdentityDocument = user.IdentityDocument,
-                    RoleName = user.Role.Name,
-                    IsActive = user.IsActive,
-                    CreatedAt = user.CreatedAt
-                });
-
-                return Ok(response);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -55,9 +51,34 @@ namespace ScheduleApp.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Crear usuario.
-        /// </summary>
+        // GET /api/Users/{id} (HU-58) - Detalle de un usuario por su Id.
+        // Retorna 200 con los datos completos, 404 si no existe.
+        [HttpGet("{id}")]
+        public async Task<ActionResult<UserResponseDto>> GetUserById(Guid id)
+        {
+            try
+            {
+                var user = await _userService.GetUserByIdAsync(id);
+
+                if (user == null)
+                {
+                    return NotFound(new
+                    {
+                        message = $"No se encontro un usuario con el Id '{id}'."
+                    });
+                }
+
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500,
+                    $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
+        // POST /api/Users - Crea un nuevo usuario.
+        // Retorna 201 con el usuario creado, 409 si email duplicado.
         [HttpPost]
         public async Task<ActionResult<UserResponseDto>> CreateUser(
             [FromBody] CreateUserDto dto)
@@ -79,9 +100,8 @@ namespace ScheduleApp.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Actualizar usuario.
-        /// </summary>
+        // PUT /api/Users/{id} - Actualiza los datos de un usuario existente.
+        // Retorna 200 con el usuario actualizado, 404 si no existe, 409 si email duplicado.
         [HttpPut("{id}")]
         public async Task<ActionResult<UserResponseDto>> UpdateUser(
             Guid id,
@@ -95,7 +115,7 @@ namespace ScheduleApp.API.Controllers
                 {
                     return NotFound(new
                     {
-                        message = $"No se encontró un usuario con el Id '{id}'."
+                        message = $"No se encontro un usuario con el Id '{id}'."
                     });
                 }
 
@@ -112,9 +132,8 @@ namespace ScheduleApp.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Eliminar usuario.
-        /// </summary>
+        // DELETE /api/Users/{id} - Soft delete (marca IsActive=false).
+        // Retorna 204 sin body, 404 si no existe.
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
@@ -126,7 +145,7 @@ namespace ScheduleApp.API.Controllers
                 {
                     return NotFound(new
                     {
-                        message = $"No se encontró un usuario con el Id '{id}'."
+                        message = $"No se encontro un usuario con el Id '{id}'."
                     });
                 }
 
