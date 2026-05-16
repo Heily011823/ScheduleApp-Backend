@@ -44,4 +44,33 @@ public class SubjectRepository : ISubjectRepository
         return await _context.Subjects
             .FirstOrDefaultAsync(s => s.Code == code);
     }
+
+    public async Task<List<Subject>> SearchAsync(
+    string? search,
+    int? semester,
+    bool? isActive)
+    {
+        var query = _context.Subjects.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(s =>
+                s.Name.Contains(search) ||
+                s.Code.Contains(search));
+        }
+
+        if (semester.HasValue)
+        {
+            query = query.Where(s =>
+                s.Semester == semester.Value);
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(s =>
+                s.IsActive == isActive.Value);
+        }
+
+        return await query.ToListAsync();
+    }
 }

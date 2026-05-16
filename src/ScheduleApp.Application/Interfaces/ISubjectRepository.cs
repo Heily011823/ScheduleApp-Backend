@@ -13,4 +13,10 @@ public interface ISubjectRepository
     Task CreateAsync(Subject subject);
 
     Task<Subject?> GetByCodeAsync(string code);
+
+    Task<List<Subject>> SearchAsync(
+    string? search,
+    int? semester,
+    bool? isActive
+    );
 }

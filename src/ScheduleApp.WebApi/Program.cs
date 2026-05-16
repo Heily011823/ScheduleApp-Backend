@@ -36,8 +36,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers();
 
 // Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "ScheduleApp API",
+        Version = "v1"
+    });
+});
 
 // TAPSI rules
 builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
@@ -78,17 +85,19 @@ builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 var app = builder.Build();
 
 // Automatic migrations
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+  //  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    //db.Database.Migrate();
+//}
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "ScheduleApp API V1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
