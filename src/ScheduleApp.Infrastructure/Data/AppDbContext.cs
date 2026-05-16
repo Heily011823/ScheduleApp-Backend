@@ -14,6 +14,9 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
+    
+    // Agregar junto a los otros DbSets
+    public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
