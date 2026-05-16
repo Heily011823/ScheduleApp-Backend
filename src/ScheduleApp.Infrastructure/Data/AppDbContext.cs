@@ -19,8 +19,9 @@ public class AppDbContext : DbContext
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Classroom> Classrooms { get; set; }
+    public DbSet<Schedule> Schedules { get; set; }
 
-  
+
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
     public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
 
@@ -342,6 +343,34 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Building).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Type).HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<Schedule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Relación con Materias
+            entity.HasOne(s => s.Subject)
+                  .WithMany()
+                  .HasForeignKey(s => s.SubjectId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            // Relación con Docentes
+            entity.HasOne(s => s.Teacher)
+                  .WithMany()
+                  .HasForeignKey(s => s.TeacherId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            // Relación con Aulas
+            entity.HasOne(s => s.Classroom)
+                  .WithMany()
+                  .HasForeignKey(s => s.ClassroomId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            // Límites de texto obligatorios
+            entity.Property(e => e.AcademicProgram).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Shift).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(30).IsRequired();
         });
     }
 
