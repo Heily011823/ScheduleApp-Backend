@@ -98,5 +98,16 @@ namespace ScheduleApp.Application.Services
 
             return true;
         }
+
+        public async Task<List<Subject>> SearchSubjectsAsync(
+        string? search,
+        int? semester,
+        bool? isActive)
+        {
+            return await _subjectRepository.SearchAsync(
+                search,
+                semester,
+                isActive);
+        }
     }
 }
