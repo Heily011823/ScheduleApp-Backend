@@ -36,6 +36,22 @@ public class SubjectController : ControllerBase
         }
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetSubjectById(Guid id)
+    {
+        var subject = await _subjectService.GetSubjectByIdAsync(id);
+
+        if (subject is null)
+        {
+            return NotFound(new
+            {
+                message = $"No se encontro una materia con el Id '{id}'."
+            });
+        }
+
+        return Ok(subject);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteSubject(Guid id)
     {

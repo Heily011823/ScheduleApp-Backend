@@ -11,6 +11,8 @@ public interface ISubjectService
 
     Task UpdateSubjectAsync(Guid id, UpdateSubjectDto dto);
 
+    Task<Subject?> GetSubjectByIdAsync(Guid id);
+
     Task<List<Subject>> SearchSubjectsAsync(
     string? search,
     int? semester,

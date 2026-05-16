@@ -99,6 +99,13 @@ namespace ScheduleApp.Application.Services
             return true;
         }
 
+        // Devuelve la materia con el Id solicitado o null si no existe.
+        // El controller se encarga de mapear null -> 404.
+        public async Task<Subject?> GetSubjectByIdAsync(Guid id)
+        {
+            return await _subjectRepository.GetByIdAsync(id);
+        }
+
         public async Task<List<Subject>> SearchSubjectsAsync(
         string? search,
         int? semester,
