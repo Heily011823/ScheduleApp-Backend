@@ -36,6 +36,41 @@ namespace ScheduleApp.Application.Services
             return await _userRepository.SearchUsersAsync(name, role, isActive);
         }
 
+
+        // Detalle de usuario por Id (HU-58). Devuelve null si no existe.
+        // Reutiliza GetByIdAsync del repo que ya carga el Role relacionado.
+        public async Task<UserResponseDto?> GetUserByIdAsync(Guid id)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+
+            if (user == null)
+                return null;
+
+            return MapToResponseDto(user);
+        }
+
+        // Paginacion con filtros (HU-58). Devuelve un PagedResultDto con los UserResponseDto
+        // de la pagina pedida y la metadata (totalCount, page, pageSize).
+        public async Task<PagedResultDto<UserResponseDto>> GetPagedUsersAsync(
+            string? name,
+            string? role,
+            bool? isActive,
+            int page,
+            int pageSize)
+        {
+            var (items, totalCount) = await _userRepository.GetPagedAsync(
+                name, role, isActive, page, pageSize);
+
+            var dtos = items.Select(MapToResponseDto).ToList();
+
+            return new PagedResultDto<UserResponseDto>
+            {
+                Items = dtos,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+        }
         public async Task<UserResponseDto> CreateUserAsync(CreateUserDto dto)
         {
             var normalizedEmail = dto.Email.ToLower().Trim();
@@ -143,3 +178,4 @@ namespace ScheduleApp.Application.Services
         }
     }
 }
+

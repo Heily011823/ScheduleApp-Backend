@@ -75,6 +75,46 @@ public class UserRepository : IUserRepository
         return await query.ToListAsync();
     }
 
+
+    // Paginacion con filtros (HU-58).
+    // Reutiliza la misma logica de filtros que SearchUsersAsync, aplica Skip/Take y devuelve el total.
+    public async Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
+        string? name,
+        string? role,
+        bool? isActive,
+        int page,
+        int pageSize)
+    {
+        var query = _context.Users
+            .Include(u => u.Role)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            query = query.Where(u =>
+                u.FullName.Contains(name) ||
+                u.Username.Contains(name) ||
+                u.Email.Contains(name));
+        }
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            query = query.Where(u => u.Role.Name == role);
+        }
+        if (isActive.HasValue)
+        {
+            query = query.Where(u => u.IsActive == isActive.Value);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(u => u.FullName)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
     public async Task AddAsync(User user)
     {
         await _context.Users.AddAsync(user);
