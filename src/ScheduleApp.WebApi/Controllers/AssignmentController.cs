@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
-using ScheduleApp.Domain.Entities;
 
 namespace ScheduleApp.WebApi.Controllers
 {
@@ -16,23 +16,19 @@ namespace ScheduleApp.WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveAssignment([FromBody] Assignment assignment)
+        public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
         {
             try
             {
-                await _assignmentService.SaveAssignmentAsync(assignment);
-
-                return Ok(new
-                {
-                    message = "Assignment saved successfully"
-                });
+                var created = await _assignmentService.CreateAssignmentAsync(dto);
+                return CreatedAtAction(
+                    nameof(GetAssignmentById),
+                    new { id = created.Id },
+                    created);
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -40,8 +36,64 @@ namespace ScheduleApp.WebApi.Controllers
         public async Task<IActionResult> GetAssignments()
         {
             var assignments = await _assignmentService.GetAssignmentsAsync();
-
             return Ok(assignments);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetAssignmentById(int id)
+        {
+            var assignment = await _assignmentService.GetAssignmentByIdAsync(id);
+
+            if (assignment is null)
+            {
+                return NotFound(new
+                {
+                    message = $"No se encontro un horario con el Id '{id}'."
+                });
+            }
+
+            return Ok(assignment);
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateAssignment(
+            int id,
+            [FromBody] UpdateAssignmentDto dto)
+        {
+            try
+            {
+                var updated = await _assignmentService.UpdateAssignmentAsync(id, dto);
+
+                if (updated is null)
+                {
+                    return NotFound(new
+                    {
+                        message = $"No se encontro un horario con el Id '{id}'."
+                    });
+                }
+
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteAssignment(int id)
+        {
+            var deleted = await _assignmentService.DeleteAssignmentAsync(id);
+
+            if (!deleted)
+            {
+                return NotFound(new
+                {
+                    message = $"No se encontro un horario con el Id '{id}'."
+                });
+            }
+
+            return NoContent();
         }
     }
 }
