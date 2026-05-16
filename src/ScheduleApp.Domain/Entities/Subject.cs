@@ -4,6 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+/// Autor:  Mateo Quintero 
+/// Version: 0.2
+/// rama: 33-Reglas-tapsi
+
 namespace ScheduleApp.Domain.Entities;
 
 /// <summary>
