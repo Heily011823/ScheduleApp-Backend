@@ -117,6 +117,10 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue(true);
 
+            entity.Property(s => s.IsTapsi)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             entity.Property(s => s.CreatedAt)
                 .IsRequired();
 
@@ -151,5 +155,70 @@ public class AppDbContext : DbContext
             entity.Property(a => a.EndTime)
                 .IsRequired();
         });
+
+
+        /// Autor:  Mateo Quintero 
+        /// Version: 0.2
+        /// rama: 33-Reglas-tapsi
+
+        modelBuilder.Entity<TapsiRule>(entity =>
+        {
+            entity.ToTable("TapsiRules");
+            entity.HasKey(t => t.Id);
+
+            entity.Property(t => t.RuleType)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(t => t.Description)
+                .IsRequired()
+                .HasMaxLength(300);
+
+            entity.Property(t => t.Value)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(t => t.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(t => t.CreatedAt)
+                .IsRequired();
+
+            entity.Property(t => t.UpdatedAt)
+                .IsRequired(false);
+
+            // Datos iniciales de reglas TAPSI
+            entity.HasData(
+                new TapsiRule
+                {
+                    Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                    RuleType = "MAX_DAILY_HOURS",
+                    Description = "Las materias TAPSI no pueden superar 4 horas diarias.",
+                    Value = "4",
+                    IsActive = true,
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new TapsiRule
+                {
+                    Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                    RuleType = "ALLOWED_DAYS",
+                    Description = "Las materias TAPSI solo pueden asignarse en días hábiles.",
+                    Value = "Lunes,Martes,Miércoles,Jueves,Viernes",
+                    IsActive = true,
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new TapsiRule
+                {
+                    Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                    RuleType = "TIME_RANGE",
+                    Description = "Las materias TAPSI deben dictarse entre 7:00 y 18:00.",
+                    Value = "07:00-18:00",
+                    IsActive = true,
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
+        });
+
     }
 }
