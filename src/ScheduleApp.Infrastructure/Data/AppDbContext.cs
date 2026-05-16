@@ -15,8 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     
-    // Agregar junto a los otros DbSets
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
+    public DbSet<Teacher> Teachers => Set<Teacher>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -220,5 +220,46 @@ public class AppDbContext : DbContext
             );
         });
 
+        /// Autor:  Mateo Quintero 
+        /// Version: 0.2
+        /// rama: 96-Crud-docentes
+        modelBuilder.Entity<Teacher>(entity =>
+        {
+            entity.ToTable("Teachers");
+            entity.HasKey(t => t.Id);
+
+            entity.HasIndex(t => t.Email).IsUnique();
+            entity.HasIndex(t => t.IdentityDocument).IsUnique();
+
+            entity.Property(t => t.FullName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(t => t.Email)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(t => t.IdentityDocument)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(t => t.PhoneNumber)
+                .IsRequired(false)
+                .HasMaxLength(20);
+
+            entity.Property(t => t.Specialty)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(t => t.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(t => t.CreatedAt)
+                .IsRequired();
+
+            entity.Property(t => t.UpdatedAt)
+                .IsRequired(false);
+        });
     }
 }

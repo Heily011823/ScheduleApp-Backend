@@ -46,6 +46,11 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Teacher module
+
+builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
+builder.Services.AddScoped<ITeacherService, TeacherService>();
+
 // TAPSI rules
 builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
 builder.Services.AddScoped<TapsiService>();
