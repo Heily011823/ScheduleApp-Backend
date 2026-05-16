@@ -39,6 +39,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// TAPSI rules
+builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
+builder.Services.AddScoped<TapsiService>();
+
 // Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

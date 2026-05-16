@@ -1,6 +1,7 @@
 ﻿
 // ScheduleApp.Domain/Entities/TapsiRule.cs
 
+// ScheduleApp.Domain/Entities/TapsiRule.cs
 using System;
 using System.Collections.Generic;
 using System.Text;
