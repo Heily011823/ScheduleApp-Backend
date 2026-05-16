@@ -1,27 +1,44 @@
-﻿using System;
+﻿
+// ScheduleApp.Domain/Entities/Subject.cs
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ScheduleApp.Domain.Entities
+namespace ScheduleApp.Domain.Entities;
+
+/// <summary>
+/// Representa una materia del plan de estudios.
+/// Las materias marcadas como TAPSI tienen restricciones especiales
+/// que se aplican durante la generación de horarios.
+/// </summary>
+public class Subject
 {
-    public class Subject
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; set; }
 
-        public string Code { get; set; } = string.Empty;
+    /// <summary>Código único de la materia. Ej: "MAT101".</summary>
+    public string Code { get; set; } = string.Empty;
 
-        public string Name { get; set; } = string.Empty;
+    /// <summary>Nombre completo de la materia.</summary>
+    public string Name { get; set; } = string.Empty;
 
-        public int Semester { get; set; }
+    /// <summary>Semestre al que pertenece la materia (1-10).</summary>
+    public int Semester { get; set; }
 
-        public int Credits { get; set; }
+    /// <summary>Número de créditos académicos.</summary>
+    public int Credits { get; set; }
 
-        public int WeeklyHours { get; set; }
+    /// <summary>Horas semanales de clase.</summary>
+    public int WeeklyHours { get; set; }
 
-        public bool IsActive { get; set; } = true;
+    /// <summary>
+    /// Indica si la materia pertenece al programa TAPSI.
+    /// Las materias TAPSI tienen reglas especiales de horario.
+    /// </summary>
+    public bool IsTapsi { get; set; } = false;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>Indica si la materia está activa en el sistema.</summary>
+    public bool IsActive { get; set; } = true;
 
-        public DateTime? UpdatedAt { get; set; }
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 }
