@@ -14,9 +14,10 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
-    
+
     // Agregar junto a los otros DbSets
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
+    public DbSet<Program> Programs => Set<Program>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -156,8 +157,35 @@ public class AppDbContext : DbContext
                 .IsRequired();
         });
 
+        // Autor: Jacobo
+        // Version: 0.1
+        // Rama: feature/127-programas-crud-api
+        modelBuilder.Entity<Program>(entity =>
+        {
+            entity.ToTable("Programs");
 
-        /// Autor:  Mateo Quintero 
+            entity.HasKey(p => p.Id);
+
+            entity.HasIndex(p => p.Code)
+                .IsUnique();
+
+            entity.Property(p => p.Code)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(p => p.CreatedAt)
+                .IsRequired();
+
+            entity.Property(p => p.UpdatedAt)
+                .IsRequired(false);
+        });
+
+
+        /// Autor:  Mateo Quintero
         /// Version: 0.2
         /// rama: 33-Reglas-tapsi
 
