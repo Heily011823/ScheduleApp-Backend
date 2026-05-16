@@ -15,6 +15,27 @@ public class SubjectController : ControllerBase
         _subjectService = subjectService;
     }
 
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchSubjects(
+    [FromQuery] string? search,
+    [FromQuery] int? semester,
+    [FromQuery] bool? isActive)
+    {
+        try
+        {
+            var subjects = await _subjectService.SearchSubjectsAsync(
+                search,
+                semester,
+                isActive);
+
+            return Ok(subjects);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteSubject(Guid id)
     {
