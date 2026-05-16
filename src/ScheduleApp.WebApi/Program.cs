@@ -3,12 +3,16 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Application.Services;
 using ScheduleApp.Infrastructure.Data;
 using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
 using System.Text;
+
+// QuestPDF community license (uso no comercial / educativo).
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +40,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers();
 
 // Swagger
-//builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
@@ -47,7 +50,6 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Teacher module
-
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
 
@@ -76,7 +78,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-// SOLUCIÓN AQUÍ: Instanciamos JwtService pasando las variables validadas al constructor
 builder.Services.AddScoped<IJwtService>(provider =>
     new JwtService(jwtSecret, jwtIssuer, jwtAudience));
 
@@ -86,15 +87,11 @@ builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ISubjectService, SubjectService>();
 builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
+builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
+builder.Services.AddScoped<IProgramService, ProgramService>();
+builder.Services.AddScoped<IProgramPdfService, ProgramPdfService>();
 
 var app = builder.Build();
-
-// Automatic migrations
-//using (var scope = app.Services.CreateScope())
-//{
-  //  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //db.Database.Migrate();
-//}
 
 app.UseSwagger();
 

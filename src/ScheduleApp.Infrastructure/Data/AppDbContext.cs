@@ -14,9 +14,9 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
-    
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
+    public DbSet<Program> Programs => Set<Program>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -156,8 +156,35 @@ public class AppDbContext : DbContext
                 .IsRequired();
         });
 
+        // Autor: Jacobo
+        // Version: 0.1
+        // Rama: feature/127-programas-crud-api
+        modelBuilder.Entity<Program>(entity =>
+        {
+            entity.ToTable("Programs");
 
-        /// Autor:  Mateo Quintero 
+            entity.HasKey(p => p.Id);
+
+            entity.HasIndex(p => p.Code)
+                .IsUnique();
+
+            entity.Property(p => p.Code)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(p => p.CreatedAt)
+                .IsRequired();
+
+            entity.Property(p => p.UpdatedAt)
+                .IsRequired(false);
+        });
+
+
+        /// Autor:  Mateo Quintero
         /// Version: 0.2
         /// rama: 33-Reglas-tapsi
 
@@ -188,7 +215,6 @@ public class AppDbContext : DbContext
             entity.Property(t => t.UpdatedAt)
                 .IsRequired(false);
 
-            // Datos iniciales de reglas TAPSI
             entity.HasData(
                 new TapsiRule
                 {
@@ -220,7 +246,7 @@ public class AppDbContext : DbContext
             );
         });
 
-        /// Autor:  Mateo Quintero 
+        /// Autor:  Mateo Quintero
         /// Version: 0.2
         /// rama: 96-Crud-docentes
         modelBuilder.Entity<Teacher>(entity =>
