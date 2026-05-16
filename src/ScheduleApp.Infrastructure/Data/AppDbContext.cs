@@ -11,7 +11,7 @@ public class AppDbContext : DbContext
         : base(options)
     {
     }
-
+    public DbSet<ProgramSemester> ProgramSemesters { get; set; }
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
@@ -20,7 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Classroom> Classrooms { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
-
+    public DbSet<AcademicProgram> AcademicPrograms { get; set; }
 
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
     public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
@@ -371,6 +371,31 @@ public class AppDbContext : DbContext
             entity.Property(e => e.AcademicProgram).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Shift).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Status).HasMaxLength(30).IsRequired();
+        });
+        modelBuilder.Entity<AcademicProgram>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Criterio de aceptación: Código obligatorio y ÚNICO
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.Code).HasMaxLength(20).IsRequired();
+
+            entity.Property(e => e.Name).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Shift).HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<ProgramSemester>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Un Programa tiene Muchos Semestres desglosados
+            entity.HasOne(ps => ps.AcademicProgram)
+                  .WithMany() // Si deseas navegación inversa, puedes mapearla en AcademicProgram después
+                  .HasForeignKey(ps => ps.AcademicProgramId)
+                  .OnDelete(DeleteBehavior.Cascade); // Si se borra el programa, se borran sus semestres
+
+            entity.Property(e => e.SemesterNumber).IsRequired();
+            entity.Property(e => e.MaxCredits).IsRequired();
         });
     }
 

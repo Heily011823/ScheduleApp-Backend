@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ScheduleApp.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516232232_CrearTablaProgramasAcademicos")]
+    partial class CrearTablaProgramasAcademicos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,34 +150,6 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Classrooms");
-                });
-
-            modelBuilder.Entity("ScheduleApp.Domain.Entities.ProgramSemester", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AcademicProgramId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MaxCredits")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SemesterNumber")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AcademicProgramId");
-
-                    b.ToTable("ProgramSemesters");
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Role", b =>
@@ -535,17 +510,6 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("ScheduleApp.Domain.Entities.ProgramSemester", b =>
-                {
-                    b.HasOne("ScheduleApp.Domain.Entities.AcademicProgram", "AcademicProgram")
-                        .WithMany()
-                        .HasForeignKey("AcademicProgramId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AcademicProgram");
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Schedule", b =>
