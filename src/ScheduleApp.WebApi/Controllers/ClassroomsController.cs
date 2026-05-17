@@ -1,5 +1,6 @@
 ﻿// src/ScheduleApp.WebApi/Controllers/ClassroomsController.cs
 using Microsoft.AspNetCore.Mvc;
+using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 
@@ -109,6 +110,38 @@ public class ClassroomsController : ControllerBase
             return StatusCode(500, new
             {
                 message = "Error al eliminar el aula.",
+                detail = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Cambia el estado activo/inactivo de un aula.
+    /// Dado que está activa y se desactiva → no aparece en asignaciones.
+    /// Dado que está inactiva y se activa → vuelve a estar disponible.
+    /// </summary>
+    /// Autor: Mateo Quintero
+    /// Rama: 85-implementar-cambio-de-estado-de-aula
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> ChangeStatus(
+        int id,
+        [FromBody] ChangeStatusDto dto)
+    {
+        try
+        {
+            var classroom = await _classroomService.ChangeStatusAsync(id, dto.IsActive);
+            if (classroom is null)
+                return NotFound(new
+                {
+                    message = $"No se encontró un aula con el ID '{id}'."
+                });
+            return Ok(classroom);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "Error al cambiar el estado del aula.",
                 detail = ex.Message
             });
         }
