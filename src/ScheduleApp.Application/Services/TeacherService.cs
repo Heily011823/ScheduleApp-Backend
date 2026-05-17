@@ -6,7 +6,7 @@ using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 
-// Ruta recomendada: src/ScheduleApp.Application/Services/TeacherService.cs
+// src/ScheduleApp.Application/Services/TeacherService.cs
 namespace ScheduleApp.Application.Services;
 
 /// <summary>
@@ -117,39 +117,65 @@ public class TeacherService : ITeacherService
         return MapToResponseDto(teacher);
     }
 
+    /// <summary>
+    /// Actualiza los datos de un docente existente.
+    /// </summary>
+    /// Autor: Mateo Quintero
+    /// Version: 0.1
+    /// Rama: 97-validar-documento-único-de-docente
     public async Task<TeacherResponseDto?> UpdateAsync(Guid id, UpdateTeacherDto dto)
     {
         var teacher = await _teacherRepository.GetByIdAsync(id);
         if (teacher == null) return null;
 
-        // Actualizamos los campos directos y planos de la entidad raíz
+        // ── Validación #97: documento único al actualizar ────────────────────
+        // Criterio: si ya existe otro docente con el mismo documento, lanzar error.
+        // Criterio: si el documento es único, permitir guardar.
+        if (teacher.IdentityDocument != dto.IdentityDocument.Trim())
+        {
+            var existingDoc = await _teacherRepository
+                .GetByIdentityDocumentAsync(dto.IdentityDocument.Trim());
+
+            if (existingDoc is not null && existingDoc.Id != id)
+                throw new InvalidOperationException(
+                    $"Ya existe otro docente registrado con el documento '{dto.IdentityDocument}'.");
+        }
+
+        // ── Validación #98: correo único al actualizar ───────────────────────
+        // Criterio: si ya existe otro docente con el mismo correo, lanzar error.
+        // Criterio: si el correo es único, permitir guardar.
+        if (teacher.Email != dto.Email.ToLower().Trim())
+        {
+            var existingEmail = await _teacherRepository
+                .GetByEmailAsync(dto.Email.ToLower().Trim());
+
+            if (existingEmail is not null && existingEmail.Id != id)
+                throw new InvalidOperationException(
+                    $"Ya existe otro docente registrado con el correo '{dto.Email}'.");
+        }
+
+        // Actualizamos los campos directos
         teacher.FirstName = dto.FirstName;
         teacher.LastName = dto.LastName;
-        teacher.Email = dto.Email;
-        teacher.IdentityDocument = dto.IdentityDocument;
+        teacher.Email = dto.Email.ToLower().Trim();
+        teacher.IdentityDocument = dto.IdentityDocument.Trim();
         teacher.PhoneNumber = dto.PhoneNumber;
         teacher.IsActive = dto.IsActive;
         teacher.UpdatedAt = DateTime.UtcNow;
 
-        // Actualización de la estructura normalizada de disponibilidad
+        // Actualización de disponibilidad
         var availability = teacher.Availabilities.FirstOrDefault();
         if (availability != null)
-        {
             availability.MaxTeachingHours = dto.TeachingHours;
-        }
 
-        // Actualización de la tabla intermedia relacional
+        // Actualización de la tabla intermedia
         var teacherSubject = teacher.TeacherSubjects.FirstOrDefault();
         if (teacherSubject != null)
-        {
             teacherSubject.ContractType = dto.ContractType;
-        }
 
         await _teacherRepository.UpdateAsync(teacher);
-
         return MapToResponseDto(teacher);
     }
-
     public async Task<bool> DeleteAsync(Guid id)
     {
         var teacher = await _teacherRepository.GetByIdAsync(id);
