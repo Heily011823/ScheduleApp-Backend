@@ -1,4 +1,18 @@
+<<<<<<< Updated upstream
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+=======
+﻿// ScheduleApp.WebApi/Program.cs
+
+/// Autor: Mateo Quintero (Modificado para usar appsettings)
+/// Version: 0.2
+
+
+/// Autor: Mateo Quintero
+/// Version: 0.1
+using DotNetEnv;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+>>>>>>> Stashed changes
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ScheduleApp.Application.Interfaces;
@@ -8,6 +22,9 @@ using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
 using System;
 using System.Text;
+
+Env.TraversePath().Load();
+
 
 var builder = WebApplication.CreateBuilder(args);
 
