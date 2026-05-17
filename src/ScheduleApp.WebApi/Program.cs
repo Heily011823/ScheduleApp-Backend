@@ -27,6 +27,10 @@ if (string.IsNullOrWhiteSpace(jwtIssuer))
 if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
 
+//Aulas
+builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
+builder.Services.AddScoped<IClassroomService, ClassroomService>();
+
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
