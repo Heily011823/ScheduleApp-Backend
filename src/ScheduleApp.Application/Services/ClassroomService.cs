@@ -1,25 +1,23 @@
 ﻿// src/ScheduleApp.Application/Services/ClassroomService.cs
 using System;
 using System.Collections.Generic;
-<<<<<<< HEAD
 using System.Threading.Tasks;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
-=======
-using System.Text;
-using System.Threading.Tasks;
->>>>>>> b3085647cd120c5e717d5b48bc1a47e5317e077c
 
 namespace ScheduleApp.Application.Services;
 
-
+/*
+ * Authors: Salome Carmona, Mateo Quintero
+ * Description: Implementation of business rules for classrooms using Guid identifiers
+ * Features: #84 Unique code validation, #85 Status change management
+ */
 public class ClassroomService : IClassroomService
 {
     private readonly IClassroomRepository _classroomRepository;
 
     public ClassroomService(IClassroomRepository classroomRepository)
     {
-<<<<<<< HEAD
         _classroomRepository = classroomRepository;
     }
 
@@ -28,7 +26,6 @@ public class ClassroomService : IClassroomService
         return await _classroomRepository.GetAllAsync();
     }
 
-   
     public async Task<Classroom?> GetClassroomByIdAsync(Guid id)
     {
         return await _classroomRepository.GetByIdAsync(id);
@@ -36,7 +33,7 @@ public class ClassroomService : IClassroomService
 
     public async Task CreateClassroomAsync(Classroom classroom)
     {
-        // Regla de negocio Criterio #84: Validar código único
+        // Regla de negocio Criterio #84: Validar código único institucional
         var existing = await _classroomRepository.GetByCodeAsync(classroom.Code);
         if (existing != null)
         {
@@ -58,72 +55,26 @@ public class ClassroomService : IClassroomService
         await _classroomRepository.UpdateAsync(classroom);
     }
 
-  
     public async Task DeleteClassroomAsync(Guid id)
     {
         await _classroomRepository.DeleteAsync(id);
     }
 
-  
+    /// <summary>
+    /// Cambia el estado activo/inactivo de un aula.
+    /// Feature #85: Si se desactiva, no aparecerá en las asignaciones disponibles.
+    /// </summary>
     public async Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive)
     {
-        return await _classroomRepository.ChangeStatusAsync(id, isActive);
+        // Buscamos el aula primero para validar su existencia y mutar sus propiedades
+        var classroom = await _classroomRepository.GetByIdAsync(id);
+        if (classroom is null)
+            return null;
+
+        classroom.IsActive = isActive;
+        classroom.UpdatedAt = DateTime.UtcNow;
+
+        await _classroomRepository.UpdateAsync(classroom);
+        return classroom;
     }
-=======
-        private readonly IClassroomRepository _repository;
-
-        public ClassroomService(IClassroomRepository repository)
-        {
-            _repository = repository;
-        }
-
-        public async Task<List<Classroom>> GetClassroomsAsync()
-        {
-            return await _repository.GetAllAsync();
-        }
-
-        // CORREGIDO: Cambiado de int a Guid
-        public async Task<Classroom?> GetClassroomByIdAsync(Guid id)
-        {
-            return await _repository.GetByIdAsync(id);
-        }
-
-        public async Task CreateClassroomAsync(Classroom classroom)
-        {
-            await _repository.CreateAsync(classroom);
-        }
-
-        public async Task UpdateClassroomAsync(Classroom classroom)
-        {
-            await _repository.UpdateAsync(classroom);
-        }
-
-        // CORREGIDO: Cambiado de int a Guid
-        public async Task DeleteClassroomAsync(Guid id)
-        {
-            await _repository.DeleteAsync(id);
-        }
-
-        /// <summary>
-        /// Cambia el estado activo/inactivo de un aula.
-        /// Criterio: si está activa y se desactiva → no aparece en asignaciones.
-        /// Criterio: si está inactiva y se activa → vuelve a estar disponible.
-        /// </summary>
-        /// Autor: Mateo Quintero
-        /// Version: 0.1
-        /// Rama: 85-implementar-cambio-de-estado-de-aula
-        // CORREGIDO: Cambiado de int a Guid
-        public async Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive)
-        {
-            var classroom = await _repository.GetByIdAsync(id);
-            if (classroom is null) return null;
-
-            classroom.IsActive = isActive;
-            classroom.UpdatedAt = DateTime.UtcNow;
-
-            await _repository.UpdateAsync(classroom);
-            return classroom;
-        }
-    }
->>>>>>> b3085647cd120c5e717d5b48bc1a47e5317e077c
 }

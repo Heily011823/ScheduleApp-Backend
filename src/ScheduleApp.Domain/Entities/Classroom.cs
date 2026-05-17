@@ -1,17 +1,14 @@
-﻿using System;
+﻿// src/ScheduleApp.Domain/Entities/Classroom.cs
+using System;
 
 namespace ScheduleApp.Domain.Entities;
 
 /// <summary>
-/// Entidad de dominio que representa un espacio académico (Aula).
+/// Entidad de dominio que representa un espacio académico (Aula) usando identificadores únicos globales.
 /// </summary>
 public class Classroom
 {
-<<<<<<< HEAD
-    // CORREGIDO: Cambiado de int a Guid para mantener consistencia arquitectónica
-=======
-    // Usamos Guid para mantener la consistencia arquitectónica del backend
->>>>>>> b3085647cd120c5e717d5b48bc1a47e5317e077c
+    // Identificador único de la entidad (Guid)
     public Guid Id { get; set; }
 
     // Código académico único del aula (ej: 102001)
@@ -32,10 +29,10 @@ public class Classroom
     // Tipo de mobiliario/aula (ej: Laboratorio, Sillas universitarias)
     public string Type { get; set; } = string.Empty;
 
-    // Control de estado lógico
+    // Control de estado lógico para el Criterio #85
     public bool IsActive { get; set; } = true;
 
-    // Auditoría
+    // Campos de auditoría
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 }
