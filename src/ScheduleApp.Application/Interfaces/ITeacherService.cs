@@ -46,4 +46,10 @@ public interface ITeacherService
     /// </summary>
     Task<bool> DeleteAsync(
         Guid id);
+
+    /// <summary>
+    /// Cambia el estado activo/inactivo de un docente.
+    /// </summary>
+    Task<TeacherResponseDto?> ChangeStatusAsync(Guid id, bool isActive);
+
 }
