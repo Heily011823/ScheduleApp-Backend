@@ -100,6 +100,15 @@ builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
 var app = builder.Build();
 
+
+
+// Módulo de Horarios con Validación de Créditos
+builder.Services.AddScoped<IProgramSemesterRepository, ProgramSemesterRepository>();
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<CreditValidationService>();
+
+
+
 // =========================================================================
 // CONFIGURACIÓN DEL PIPELINE DE PETICIONES HTTP (MIDDLEWARES)
 // =========================================================================
