@@ -11,6 +11,7 @@ namespace ScheduleApp.WebApi.Controllers;
 /*
  * Authors: Salome Carmona, Mateo Quintero
  * Description: API endpoints for classroom management and availability using Guid identifiers
+ * Features: Classroom CRUD, #84 Validar código único, #85 Cambio de estado de aula
  */
 [ApiController]
 [Route("api/[controller]")]
@@ -137,11 +138,8 @@ public class ClassroomsController : ControllerBase
         if (assignment == null)
             return BadRequest(new { success = false, message = "La asignación es obligatoria." });
 
-        // Validación estructural para identificadores Guid vacíos
         if (assignment.ClassroomId == Guid.Empty)
-        {
             return BadRequest(new { success = false, message = "Debe seleccionar un aula válida." });
-        }
 
         if (assignment.Date == default)
             return BadRequest(new { success = false, message = "La fecha es obligatoria." });

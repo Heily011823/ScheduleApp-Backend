@@ -7,7 +7,11 @@ namespace ScheduleApp.Domain.Entities;
 /// </summary>
 public class Classroom
 {
+<<<<<<< HEAD
     // CORREGIDO: Cambiado de int a Guid para mantener consistencia arquitectónica
+=======
+    // Usamos Guid para mantener la consistencia arquitectónica del backend
+>>>>>>> b3085647cd120c5e717d5b48bc1a47e5317e077c
     public Guid Id { get; set; }
 
     // Código académico único del aula (ej: 102001)
