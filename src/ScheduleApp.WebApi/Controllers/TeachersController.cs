@@ -196,4 +196,40 @@ public class TeachersController : ControllerBase
             });
         }
     }
+
+
+
+    /// <summary>
+    /// Cambia el estado activo/inactivo de un docente.
+    /// Dado que está activo y se desactiva → no aparece en asignaciones.
+    /// Dado que está inactivo y se activa → vuelve a estar disponible.
+    /// </summary>
+    /// Autor: Mateo Quintero
+    /// Version: 0.1
+    /// Rama: 99-implementar-cambio-de-estado-de-docente
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ChangeStatus(
+        Guid id,
+        [FromBody] ChangeStatusDto dto)
+    {
+        try
+        {
+            var teacher = await _teacherService.ChangeStatusAsync(id, dto.IsActive);
+            if (teacher is null)
+                return NotFound(new
+                {
+                    message = $"No se encontró un docente con el ID '{id}'."
+                });
+
+            return Ok(teacher);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "Error al cambiar el estado del docente.",
+                detail = ex.Message
+            });
+        }
+    }
 }

@@ -189,6 +189,27 @@ public class TeacherService : ITeacherService
         return true;
     }
 
+    // <summary>
+    /// Cambia el estado activo/inactivo de un docente.
+    /// Criterio: si está activo y se desactiva, no aparece en asignaciones.
+    /// Criterio: si está inactivo y se activa, vuelve a estar disponible.
+    /// </summary>
+    /// Autor: Mateo Quintero
+    /// Version: 0.1
+    /// Rama: 99-implementar-cambio-de-estado-de-docente
+    public async Task<TeacherResponseDto?> ChangeStatusAsync(Guid id, bool isActive)
+    {
+        var teacher = await _teacherRepository.GetByIdAsync(id);
+        if (teacher is null) return null;
+
+        teacher.IsActive = isActive;
+        teacher.UpdatedAt = DateTime.UtcNow;
+
+        await _teacherRepository.UpdateAsync(teacher);
+        return MapToResponseDto(teacher);
+    }
+
+
     /// <summary>
     /// Mapea de forma segura los objetos hijos relacionales hacia el DTO plano de salida.
     /// </summary>
