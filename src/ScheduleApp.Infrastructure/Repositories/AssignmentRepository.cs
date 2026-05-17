@@ -34,6 +34,25 @@ namespace ScheduleApp.Infrastructure.Repositories
             );
         }
 
+        /*
+        * Author: Salome Carmona
+        * Feature: Classroom Availability Validation
+        * Description: Checks if classroom already has an assignment
+        */
+
+        public async Task<bool> HasClassroomScheduleConflict(
+            string classroom,
+            int day,
+            TimeSpan startTime,
+            TimeSpan endTime)
+        {
+            return await _context.Assignments.AnyAsync(a =>
+                a.Classroom == classroom &&
+                a.Day == day &&
+                startTime < a.EndTime &&
+                endTime > a.StartTime
+            );
+        }
         public async Task CreateAsync(Assignment assignment)
         {
             await _context.Assignments.AddAsync(assignment);

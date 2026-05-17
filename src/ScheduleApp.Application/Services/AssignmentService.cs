@@ -26,6 +26,23 @@ namespace ScheduleApp.Application.Services
             if (assignment.StartTime >= assignment.EndTime)
                 throw new Exception("Start time must be earlier than end time");
 
+            /*
+            * Author: Salome Carmona
+            * Feature: Classroom Availability Validation
+            * Description: Prevents duplicate classroom schedules
+             */
+
+            var classroomConflict = await _assignmentRepository
+                .HasClassroomScheduleConflict(
+                    assignment.Classroom,
+                    assignment.Day,
+                    assignment.StartTime,
+                    assignment.EndTime);
+
+            if (classroomConflict)
+            {
+                throw new Exception("The classroom is already occupied at this time");
+            }
             await _assignmentRepository.CreateAsync(assignment);
             /*
              * Author: Salome Carmona

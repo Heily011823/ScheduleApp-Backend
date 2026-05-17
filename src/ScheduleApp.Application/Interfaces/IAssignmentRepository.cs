@@ -13,5 +13,16 @@ namespace ScheduleApp.Application.Interfaces
             int day,
             TimeSpan startTime,
             TimeSpan endTime);
+
+        /*
+      * Author: Salome Carmona
+       * Feature: Classroom Availability Validation
+       * Description: Validates classroom schedule conflicts
+       */
+        Task<bool> HasClassroomScheduleConflict(
+        string classroom,
+        int day,
+        TimeSpan startTime,
+        TimeSpan endTime);
     }
 }
