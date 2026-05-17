@@ -11,9 +11,13 @@ public interface ISubjectService
 
     Task UpdateSubjectAsync(Guid id, UpdateSubjectDto dto);
 
-    Task<List<Subject>> SearchSubjectsAsync(
-    string? search,
-    int? semester,
-    bool? isActive
+    // MODIFICADO: Cambiamos el tipo de retorno al DTO de Jacobo 
+    // y agregamos los parámetros numéricos obligatorios para la paginación.
+    Task<PagedResultDto<Subject>> SearchSubjectsAsync(
+        string? search,
+        int? semester,
+        bool? isActive,
+        int page,
+        int pageSize
     );
 }

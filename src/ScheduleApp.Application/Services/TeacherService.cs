@@ -102,8 +102,8 @@ public class TeacherService : ITeacherService
         // 3. NORMALIZACIÓN: Mapeamos la relación N:M con materias mediante la entidad intermedia
         // Buscamos si existe una materia que coincida con la especialidad para asociar un ID real
         // LÍNEA CORREGIDA:
-        var subjects = await _subjectRepository.SearchAsync(dto.Specialties, null, true);
-        var subjectBaseId = subjects.FirstOrDefault()?.Id ?? Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"); // ID semilla o fallback
+        var (subjectsList, _) = await _subjectRepository.SearchAsync(dto.Specialties, null, true, 1, 1);
+        var subjectBaseId = subjectsList.FirstOrDefault()?.Id ?? Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
         teacher.TeacherSubjects.Add(new TeacherSubject
         {
@@ -189,14 +189,7 @@ public class TeacherService : ITeacherService
         return true;
     }
 
-    // <summary>
-    /// Cambia el estado activo/inactivo de un docente.
-    /// Criterio: si está activo y se desactiva, no aparece en asignaciones.
-    /// Criterio: si está inactivo y se activa, vuelve a estar disponible.
-    /// </summary>
-    /// Autor: Mateo Quintero
-    /// Version: 0.1
-    /// Rama: 99-implementar-cambio-de-estado-de-docente
+   
     public async Task<TeacherResponseDto?> ChangeStatusAsync(Guid id, bool isActive)
     {
         var teacher = await _teacherRepository.GetByIdAsync(id);

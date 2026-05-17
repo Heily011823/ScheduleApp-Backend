@@ -14,9 +14,12 @@ public interface ISubjectRepository
 
     Task<Subject?> GetByCodeAsync(string code);
 
-    Task<List<Subject>> SearchAsync(
-    string? search,
-    int? semester,
-    bool? isActive
+    
+    Task<(List<Subject> Items, int TotalCount)> SearchAsync(
+        string? search,
+        int? semester,
+        bool? isActive,
+        int page,
+        int pageSize
     );
 }

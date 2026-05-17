@@ -45,13 +45,19 @@ public class SubjectRepository : ISubjectRepository
             .FirstOrDefaultAsync(s => s.Code == code);
     }
 
-    public async Task<List<Subject>> SearchAsync(
-    string? search,
-    int? semester,
-    bool? isActive)
+    // MODIFICADO: Cambiamos la firma para aceptar 'page' y 'pageSize', 
+    // y retornamos una Tupla (List, int) que requiere el DTO de Jacobo.
+    public async Task<(List<Subject> Items, int TotalCount)> SearchAsync(
+        string? search,
+        int? semester,
+        bool? isActive,
+        int page,
+        int pageSize)
     {
+        // 1. Construimos la consulta base como IQueryable (No ejecuta SQL aún)
         var query = _context.Subjects.AsQueryable();
 
+        // 2. Evaluamos y aplicamos los mismos filtros dinámicos que tenías
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(s =>
@@ -71,6 +77,17 @@ public class SubjectRepository : ISubjectRepository
                 s.IsActive == isActive.Value);
         }
 
-        return await query.ToListAsync();
+        // 3. Contamos el total de registros en la base de datos que cumplen con los criterios 
+        // ¡Crucial hacer esto ANTES de aplicar el Skip y el Take!
+        int totalCount = await query.CountAsync();
+
+        // 4. Aplicamos la segmentación matemática para la paginación a nivel de SQL Server
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        // 5. Devolvemos ambos valores empaquetados en una tupla limpia
+        return (items, totalCount);
     }
 }

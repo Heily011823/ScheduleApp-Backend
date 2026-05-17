@@ -15,20 +15,28 @@ public class SubjectController : ControllerBase
         _subjectService = subjectService;
     }
 
+    // MODIFICADO: Ahora el endpoint recibe 'page' y 'pageSize' desde el Query String.
+    // Se configuran valores por defecto (Página 1, 10 registros por página) si no se envían.
     [HttpGet("search")]
     public async Task<IActionResult> SearchSubjects(
-    [FromQuery] string? search,
-    [FromQuery] int? semester,
-    [FromQuery] bool? isActive)
+        [FromQuery] string? search,
+        [FromQuery] int? semester,
+        [FromQuery] bool? isActive,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         try
         {
-            var subjects = await _subjectService.SearchSubjectsAsync(
+            // Se invoca al servicio pasándole las variables matemáticas de paginación
+            var pagedResult = await _subjectService.SearchSubjectsAsync(
                 search,
                 semester,
-                isActive);
+                isActive,
+                page,
+                pageSize);
 
-            return Ok(subjects);
+            // Retorna un PagedResultDto<Subject> con la metadata y el estatus 200 OK
+            return Ok(pagedResult);
         }
         catch (Exception ex)
         {
@@ -42,7 +50,7 @@ public class SubjectController : ControllerBase
         try
         {
             await _subjectService.DeleteSubjectAsync(id);
-            return Ok("Subject deleted successfully");
+            return Ok("Materia eliminada exitosamente");
         }
         catch (Exception ex)
         {
@@ -56,7 +64,7 @@ public class SubjectController : ControllerBase
         try
         {
             await _subjectService.CreateSubjectAsync(dto);
-            return Ok("Subject created successfully");
+            return Ok("Materia creada exitosamente");
         }
         catch (Exception ex)
         {
@@ -70,7 +78,7 @@ public class SubjectController : ControllerBase
         try
         {
             await _subjectService.UpdateSubjectAsync(id, dto);
-            return Ok("Subject updated successfully");
+            return Ok("Materia actualizada exitosamente");
         }
         catch (Exception ex)
         {

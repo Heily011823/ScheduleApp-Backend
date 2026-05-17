@@ -99,15 +99,30 @@ namespace ScheduleApp.Application.Services
             return true;
         }
 
-        public async Task<List<Subject>> SearchSubjectsAsync(
-        string? search,
-        int? semester,
-        bool? isActive)
+      
+        public async Task<PagedResultDto<Subject>> SearchSubjectsAsync(
+            string? search,
+            int? semester,
+            bool? isActive,
+            int page,
+            int pageSize)
         {
-            return await _subjectRepository.SearchAsync(
+            // Consume la tupla del repositorio de manera limpia usando las variables correctas
+            var (items, totalCount) = await _subjectRepository.SearchAsync(
                 search,
                 semester,
-                isActive);
+                isActive,
+                page,
+                pageSize);
+
+            // Mapea la información al envoltorio genérico de la aplicación
+            return new PagedResultDto<Subject>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
         }
     }
 }
