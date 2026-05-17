@@ -1,107 +1,79 @@
-﻿using ScheduleApp.Application.Interfaces;
-using ScheduleApp.Domain.Entities;
-using ScheduleApp.Infrastructure.Data;
+﻿// src/ScheduleApp.Infrastructure/Repositories/ClassroomRepository.cs
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using ScheduleApp.Application.Interfaces;
+using ScheduleApp.Domain.Entities;
+using ScheduleApp.Infrastructure.Data;
 
-namespace ScheduleApp.Infrastructure.Repositories
+namespace ScheduleApp.Infrastructure.Repositories;
+
+
+public class ClassroomRepository : IClassroomRepository
 {
-    /*
-      * Author: Salome Carmona
-      * Feature: Classroom CRUD
-      * Description: Handles classroom database operations
-      */
+    private readonly AppDbContext _context;
 
-    public class ClassroomRepository : IClassroomRepository
+    public ClassroomRepository(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public ClassroomRepository(AppDbContext context)
+    public async Task<List<Classroom>> GetAllAsync()
+    {
+        return await _context.Classrooms.ToListAsync();
+    }
+
+    // CORREGIDO: Cambiado de int a Guid
+    public async Task<Classroom?> GetByIdAsync(Guid id)
+    {
+        return await _context.Classrooms.FindAsync(id);
+    }
+
+    public async Task<Classroom?> GetByCodeAsync(string code)
+    {
+        return await _context.Classrooms.FirstOrDefaultAsync(c => c.Code == code);
+    }
+
+    public async Task CreateAsync(Classroom classroom)
+    {
+        // Si el Guid viene vacío, lo generamos antes de guardar
+        if (classroom.Id == Guid.Empty)
         {
-            _context = context;
+            classroom.Id = Guid.NewGuid();
         }
 
-        public async Task<List<Classroom>> GetAllAsync()
-        {
-            return await _context.Classrooms.ToListAsync();
-        }
+        await _context.Classrooms.AddAsync(classroom);
+        await _context.SaveChangesAsync();
+    }
 
-        public async Task<Classroom?> GetByIdAsync(int id)
-        {
-            return await _context.Classrooms.FindAsync(id);
-        }
+    public async Task UpdateAsync(Classroom classroom)
+    {
+        _context.Classrooms.Update(classroom);
+        await _context.SaveChangesAsync();
+    }
 
-        /// <summary>
-        /// Crea un aula validando que el código sea único.
-        /// Criterio: si el código ya existe → error.
-        /// Criterio: si el código es único → permite guardar.
-        /// </summary>
-        /// Autor: Mateo Quintero
-        /// Version: 0.1
-        /// Rama: 84-validar-código-único-de-aula
-        public async Task CreateAsync(Classroom classroom)
+ 
+    public async Task DeleteAsync(Guid id)
+    {
+        var classroom = await GetByIdAsync(id);
+        if (classroom != null)
         {
-            await _context.Classrooms.AddAsync(classroom);
+            _context.Classrooms.Remove(classroom);
             await _context.SaveChangesAsync();
         }
+    }
 
-        /// <summary>
-        /// Actualiza un aula validando que el código sea único.
-        /// Criterio: si el código ya existe en otra aula → error.
-        /// Criterio: si el código es único → permite guardar.
-        /// </summary>
-        /// Autor: Mateo Quintero
-        /// Version: 0.1
-        /// Rama: 84-validar-código-único-de-aula
-        public async Task UpdateAsync(Classroom classroom)
-        {
-            _context.Classrooms.Update(classroom);
-            await _context.SaveChangesAsync();
-        }
+  
+    public async Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive)
+    {
+        var classroom = await GetByIdAsync(id);
+        if (classroom == null) return null;
 
-        public async Task DeleteAsync(int id)
-        {
-            var classroom = await _context.Classrooms.FindAsync(id);
+        classroom.IsActive = isActive;
+        _context.Classrooms.Update(classroom);
+        await _context.SaveChangesAsync();
 
-            if (classroom != null)
-            {
-                _context.Classrooms.Remove(classroom);
-
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        /// <summary>
-        /// Busca un aula por su código único (case-insensitive).
-        /// </summary>
-        /// Autor: Mateo Quintero
-        /// Rama: 84-validar-código-único-de-aula
-        public async Task<Classroom?> GetByCodeAsync(string code)
-        {
-            return await _context.Classrooms
-                .FirstOrDefaultAsync(c =>
-                    c.Code.ToLower() == code.ToLower().Trim());
-        }
-
-
-        /// <summary>
-        /// Cambia el estado activo/inactivo de un aula en BD.
-        /// </summary>
-        /// Autor: Mateo Quintero
-        /// Rama: 85-implementar-cambio-de-estado-de-aula
-        public async Task<Classroom?> ChangeStatusAsync(int id, bool isActive)
-        {
-            var classroom = await _context.Classrooms.FindAsync(id);
-            if (classroom is null) return null;
-
-            classroom.IsActive = isActive;
-            classroom.UpdatedAt = DateTime.UtcNow;
-
-            _context.Classrooms.Update(classroom);
-            await _context.SaveChangesAsync();
-            return classroom;
-        }
+        return classroom;
     }
 }

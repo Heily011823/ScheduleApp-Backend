@@ -1,32 +1,33 @@
 ﻿using ScheduleApp.Domain.Entities;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace ScheduleApp.Application.Interfaces
 {
     /*
      * Author: Salome Carmona
      * Feature: Classroom CRUD
-     * Description: Repository interface for classroom operations
+     * Description: Repository interface for classroom operations using Guid
      */
-
     public interface IClassroomRepository
     {
         Task<List<Classroom>> GetAllAsync();
 
-        Task<Classroom?> GetByIdAsync(int id);
+        // CAMBIADO: 'int id' por 'Guid id'
+        Task<Classroom?> GetByIdAsync(Guid id);
 
         Task CreateAsync(Classroom classroom);
 
         Task UpdateAsync(Classroom classroom);
 
-        Task DeleteAsync(int id);
+        // CAMBIADO: 'int id' por 'Guid id'
+        Task DeleteAsync(Guid id);
 
         /// <summary>Busca un aula por su código único.</summary>
         Task<Classroom?> GetByCodeAsync(string code);
 
-        /// <summary>Cambia el estado activo/inactivo de un aula en BD.</summary>
-        Task<Classroom?> ChangeStatusAsync(int id, bool isActive);
+      
+        Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive);
     }
 }

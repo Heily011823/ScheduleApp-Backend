@@ -3,7 +3,7 @@
 namespace ScheduleApp.Domain.Entities;
 
 /// <summary>
-/// Representa la configuración específica de un semestre para un programa académico (ej: 3er semestre de Sistemas).
+/// Representa la configuración específica de un semestre para un programa académico.
 /// </summary>
 public class ProgramSemester
 {
@@ -16,7 +16,7 @@ public class ProgramSemester
     // Número del semestre (ej: 1, 2, 3, 5...)
     public int SemesterNumber { get; set; }
 
-    // Carga de créditos sugerida/máxima para ESTE semestre en específico (ej: 15, 18)
+    // Carga de créditos sugerida/máxima para este semestre (ej: 15, 18)
     public int MaxCredits { get; set; }
 
     // Auditoría

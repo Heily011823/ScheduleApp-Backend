@@ -1,70 +1,66 @@
-﻿using ScheduleApp.Application.Interfaces;
-using ScheduleApp.Domain.Entities;
+﻿// src/ScheduleApp.Application/Services/ClassroomService.cs
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
+using ScheduleApp.Application.Interfaces;
+using ScheduleApp.Domain.Entities;
 
-namespace ScheduleApp.Application.Services
+namespace ScheduleApp.Application.Services;
+
+
+public class ClassroomService : IClassroomService
 {
-    /*
-      * Author: Salome Carmona
-      * Feature: Classroom CRUD
-      * Description: Handles classroom business logic
-      */
+    private readonly IClassroomRepository _classroomRepository;
 
-    public class ClassroomService : IClassroomService
+    public ClassroomService(IClassroomRepository classroomRepository)
     {
-        private readonly IClassroomRepository _repository;
+        _classroomRepository = classroomRepository;
+    }
 
-        public ClassroomService(IClassroomRepository repository)
+    public async Task<List<Classroom>> GetClassroomsAsync()
+    {
+        return await _classroomRepository.GetAllAsync();
+    }
+
+   
+    public async Task<Classroom?> GetClassroomByIdAsync(Guid id)
+    {
+        return await _classroomRepository.GetByIdAsync(id);
+    }
+
+    public async Task CreateClassroomAsync(Classroom classroom)
+    {
+        // Regla de negocio Criterio #84: Validar código único
+        var existing = await _classroomRepository.GetByCodeAsync(classroom.Code);
+        if (existing != null)
         {
-            _repository = repository;
+            throw new InvalidOperationException($"El código de aula '{classroom.Code}' ya está registrado.");
         }
 
-        public async Task<List<Classroom>> GetClassroomsAsync()
+        await _classroomRepository.CreateAsync(classroom);
+    }
+
+    public async Task UpdateClassroomAsync(Classroom classroom)
+    {
+        // Regla de negocio Criterio #84: Validar que el código no lo tenga otra aula diferente
+        var existing = await _classroomRepository.GetByCodeAsync(classroom.Code);
+        if (existing != null && existing.Id != classroom.Id)
         {
-            return await _repository.GetAllAsync();
+            throw new InvalidOperationException($"El código '{classroom.Code}' ya está siendo usado por otra aula.");
         }
 
-        public async Task<Classroom?> GetClassroomByIdAsync(int id)
-        {
-            return await _repository.GetByIdAsync(id);
-        }
+        await _classroomRepository.UpdateAsync(classroom);
+    }
 
-        public async Task CreateClassroomAsync(Classroom classroom)
-        {
-            await _repository.CreateAsync(classroom);
-        }
+  
+    public async Task DeleteClassroomAsync(Guid id)
+    {
+        await _classroomRepository.DeleteAsync(id);
+    }
 
-        public async Task UpdateClassroomAsync(Classroom classroom)
-        {
-            await _repository.UpdateAsync(classroom);
-        }
-
-        public async Task DeleteClassroomAsync(int id)
-        {
-            await _repository.DeleteAsync(id);
-        }
-
-
-        /// <summary>
-        /// Cambia el estado activo/inactivo de un aula.
-        /// Criterio: si está activa y se desactiva → no aparece en asignaciones.
-        /// Criterio: si está inactiva y se activa → vuelve a estar disponible.
-        /// </summary>
-        /// Autor: Mateo Quintero
-        /// Version: 0.1
-        /// Rama: 85-implementar-cambio-de-estado-de-aula
-        public async Task<Classroom?> ChangeStatusAsync(int id, bool isActive)
-        {
-            var classroom = await _repository.GetByIdAsync(id);
-            if (classroom is null) return null;
-
-            classroom.IsActive = isActive;
-            classroom.UpdatedAt = DateTime.UtcNow;
-
-            await _repository.UpdateAsync(classroom);
-            return classroom;
-        }
+  
+    public async Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive)
+    {
+        return await _classroomRepository.ChangeStatusAsync(id, isActive);
     }
 }

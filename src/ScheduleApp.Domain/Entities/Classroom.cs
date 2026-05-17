@@ -7,8 +7,8 @@ namespace ScheduleApp.Domain.Entities;
 /// </summary>
 public class Classroom
 {
-    // Usamos Guid para mantener la consistencia arquitectónica del backend
-    public int Id { get; set; }
+    // CORREGIDO: Cambiado de int a Guid para mantener consistencia arquitectónica
+    public Guid Id { get; set; }
 
     // Código académico único del aula (ej: 102001)
     public string Code { get; set; } = string.Empty;
@@ -22,16 +22,16 @@ public class Classroom
     // Número de piso donde se encuentra
     public int Floor { get; set; }
 
-    // Capacidad máxima de estudiantes (ej: 3, 4 o más)
+    // Capacidad máxima de estudiantes
     public int Capacity { get; set; }
 
-    // Tipo de mobiliario/aula (ej: Sillas giratorias, Sillas universitarias, Laboratorio)
+    // Tipo de mobiliario/aula (ej: Laboratorio, Sillas universitarias)
     public string Type { get; set; } = string.Empty;
 
-    // Control de estado lógico (Activa / Inactiva)
+    // Control de estado lógico
     public bool IsActive { get; set; } = true;
 
-    // Auditoría básica obligatoria
+    // Auditoría
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 }

@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ScheduleApp.Domain.Entities
+namespace ScheduleApp.Domain.Entities;
+
+public class Role
 {
-    public class Role
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 
-        public string Name { get; set; } = string.Empty;
-
-        // Relación: un rol tiene muchos usuarios
-        public ICollection<User> Users { get; set; }
-            = new List<User>();
-    }
+    // Relación: Un rol tiene muchos usuarios
+    public ICollection<User> Users { get; set; } = new List<User>();
 }

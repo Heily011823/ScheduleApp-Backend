@@ -20,16 +20,24 @@ var jwtAudience = builder.Configuration["Jwt:Audience"];
 // Validaciones de seguridad
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en el appsettings.");
+
 if (string.IsNullOrWhiteSpace(jwtSecret))
     throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
+
 if (string.IsNullOrWhiteSpace(jwtIssuer))
     throw new InvalidOperationException("Falta la variable 'Jwt:Issuer' en el appsettings.");
+
 if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
 
-//Aulas
+// ==========================================
+// Módulo de Aulas (Modificado y Corregido)
+// ==========================================
 builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
 builder.Services.AddScoped<IClassroomService, ClassroomService>();
+
+// CORREGIDO: Ahora apunta exactamente a la clase concreta 'AvailabilityService' que tienes en tu proyecto
+builder.Services.AddScoped<IClassroomAvailabilityService, AvailabilityService>();
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -99,6 +107,7 @@ app.UseSwaggerUI(options =>
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Mapeo de controladores de la API
 app.MapControllers();
 
 app.Run();

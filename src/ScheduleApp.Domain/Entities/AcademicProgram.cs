@@ -7,7 +7,6 @@ namespace ScheduleApp.Domain.Entities;
 /// </summary>
 public class AcademicProgram
 {
-    // Mantenemos consistencia con GUIDs para las PKs
     public Guid Id { get; set; }
 
     // Código único del programa (ej: "1030", "1023")
@@ -19,15 +18,13 @@ public class AcademicProgram
     // Jornada (ej: "Diurna", "Nocturna")
     public string Shift { get; set; } = string.Empty;
 
-    // Cantidad de semestres que dura la carrera (ej: 10, 12)
+    // Cantidad de semestres que dura la carrera (ej: 10)
     public int TotalSemesters { get; set; }
 
     // Estado lógico (Activa / Inactiva)
     public bool IsActive { get; set; } = true;
 
-    // Auditoría (Timestamps obligatorios según la HU)
+    // Auditoría
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
-
-
 }
