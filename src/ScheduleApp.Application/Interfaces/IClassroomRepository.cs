@@ -25,5 +25,8 @@ namespace ScheduleApp.Application.Interfaces
 
         /// <summary>Busca un aula por su código único.</summary>
         Task<Classroom?> GetByCodeAsync(string code);
+
+        /// <summary>Cambia el estado activo/inactivo de un aula en BD.</summary>
+        Task<Classroom?> ChangeStatusAsync(int id, bool isActive);
     }
 }

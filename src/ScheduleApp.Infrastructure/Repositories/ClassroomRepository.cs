@@ -84,5 +84,24 @@ namespace ScheduleApp.Infrastructure.Repositories
                 .FirstOrDefaultAsync(c =>
                     c.Code.ToLower() == code.ToLower().Trim());
         }
+
+
+        /// <summary>
+        /// Cambia el estado activo/inactivo de un aula en BD.
+        /// </summary>
+        /// Autor: Mateo Quintero
+        /// Rama: 85-implementar-cambio-de-estado-de-aula
+        public async Task<Classroom?> ChangeStatusAsync(int id, bool isActive)
+        {
+            var classroom = await _context.Classrooms.FindAsync(id);
+            if (classroom is null) return null;
+
+            classroom.IsActive = isActive;
+            classroom.UpdatedAt = DateTime.UtcNow;
+
+            _context.Classrooms.Update(classroom);
+            await _context.SaveChangesAsync();
+            return classroom;
+        }
     }
 }
