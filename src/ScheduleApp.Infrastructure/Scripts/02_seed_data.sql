@@ -64,6 +64,7 @@ ELSE BEGIN SELECT @CoordRoleId = Id FROM Roles WHERE Name = 'Coordinador'; END
 -- ==========================================
 -- 2. INSERTAR USUARIOS (ADMIN Y COORDINADORA LINA MARÍA)
 -- ==========================================
+
 IF NOT EXISTS (SELECT 1 FROM Users WHERE Username = 'admin')
 BEGIN
     INSERT INTO Users (Id, FullName, Email, Username, IdentityDocument, PasswordHash, RoleId, IsActive, CreatedAt)
