@@ -27,6 +27,24 @@ namespace ScheduleApp.Application.Services
                 throw new Exception("Start time must be earlier than end time");
 
             await _assignmentRepository.CreateAsync(assignment);
+            /*
+             * Author: Salome Carmona
+            * Feature: Teacher Schedule Validation
+            * Description: Prevents overlapping teacher assignments
+            */
+
+            var hasConflict = await _assignmentRepository
+                .HasTeacherScheduleConflict(
+                    assignment.Teacher,
+                    assignment.Day,
+                    assignment.StartTime,
+                    assignment.EndTime);
+
+            if (hasConflict)
+            {
+                throw new Exception(
+                    "The teacher already has an assigned class in this time range.");
+            }
         }
 
         public async Task<List<Assignment>> GetAssignmentsAsync()
