@@ -3,6 +3,7 @@ using ScheduleApp.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ScheduleApp.Application.Services
 {
@@ -26,7 +27,8 @@ namespace ScheduleApp.Application.Services
             return await _repository.GetAllAsync();
         }
 
-        public async Task<Classroom?> GetClassroomByIdAsync(int id)
+        // CORREGIDO: Cambiado de int a Guid
+        public async Task<Classroom?> GetClassroomByIdAsync(Guid id)
         {
             return await _repository.GetByIdAsync(id);
         }
@@ -41,11 +43,11 @@ namespace ScheduleApp.Application.Services
             await _repository.UpdateAsync(classroom);
         }
 
-        public async Task DeleteClassroomAsync(int id)
+        // CORREGIDO: Cambiado de int a Guid
+        public async Task DeleteClassroomAsync(Guid id)
         {
             await _repository.DeleteAsync(id);
         }
-
 
         /// <summary>
         /// Cambia el estado activo/inactivo de un aula.
@@ -55,7 +57,8 @@ namespace ScheduleApp.Application.Services
         /// Autor: Mateo Quintero
         /// Version: 0.1
         /// Rama: 85-implementar-cambio-de-estado-de-aula
-        public async Task<Classroom?> ChangeStatusAsync(int id, bool isActive)
+        // CORREGIDO: Cambiado de int a Guid
+        public async Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive)
         {
             var classroom = await _repository.GetByIdAsync(id);
             if (classroom is null) return null;

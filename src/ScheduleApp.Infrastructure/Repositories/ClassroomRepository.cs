@@ -1,9 +1,6 @@
 ﻿using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 namespace ScheduleApp.Infrastructure.Repositories
@@ -28,7 +25,7 @@ namespace ScheduleApp.Infrastructure.Repositories
             return await _context.Classrooms.ToListAsync();
         }
 
-        public async Task<Classroom?> GetByIdAsync(int id)
+        public async Task<Classroom?> GetByIdAsync(Guid id)   // ← int → Guid
         {
             return await _context.Classrooms.FindAsync(id);
         }
@@ -61,14 +58,13 @@ namespace ScheduleApp.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)   // ← int → Guid
         {
             var classroom = await _context.Classrooms.FindAsync(id);
 
             if (classroom != null)
             {
                 _context.Classrooms.Remove(classroom);
-
                 await _context.SaveChangesAsync();
             }
         }
@@ -85,13 +81,12 @@ namespace ScheduleApp.Infrastructure.Repositories
                     c.Code.ToLower() == code.ToLower().Trim());
         }
 
-
         /// <summary>
         /// Cambia el estado activo/inactivo de un aula en BD.
         /// </summary>
         /// Autor: Mateo Quintero
         /// Rama: 85-implementar-cambio-de-estado-de-aula
-        public async Task<Classroom?> ChangeStatusAsync(int id, bool isActive)
+        public async Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive)   // ← int → Guid
         {
             var classroom = await _context.Classrooms.FindAsync(id);
             if (classroom is null) return null;

@@ -1,28 +1,19 @@
 ﻿using ScheduleApp.Domain.Entities;
-using ScheduleApp.Application.DTOs;
 
-namespace ScheduleApp.Application.Interfaces;
-
-/*
- * Author: Salome Carmona
- * Feature: Classroom CRUD
- * Description: Service interface for classroom business logic
- *
- * Author: Mateo Quintero
- * Feature: #84 Validar código único de aula
- *          #85 Cambio de estado de aula
- */
-public interface IClassroomService
+namespace ScheduleApp.Application.Interfaces
 {
-    Task<List<Classroom>> GetClassroomsAsync();
-    Task<Classroom?> GetClassroomByIdAsync(int id);
-    Task CreateClassroomAsync(Classroom classroom);
-    Task UpdateClassroomAsync(Classroom classroom);
-    Task DeleteClassroomAsync(int id);
+    public interface IClassroomService
+    {
+        Task<List<Classroom>> GetClassroomsAsync();
 
-    /// <summary>
-    /// Cambia el estado activo/inactivo de un aula.
-    /// Rama: 85-implementar-cambio-de-estado-de-aula
-    /// </summary>
-    Task<Classroom?> ChangeStatusAsync(int id, bool isActive);
+        Task<Classroom?> GetClassroomByIdAsync(Guid id);    
+
+        Task CreateClassroomAsync(Classroom classroom);
+
+        Task UpdateClassroomAsync(Classroom classroom);
+
+        Task DeleteClassroomAsync(Guid id);                  
+
+        Task<Classroom?> ChangeStatusAsync(Guid id, bool isActive);  
+    }
 }

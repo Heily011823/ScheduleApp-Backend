@@ -1,5 +1,4 @@
-﻿// src/ScheduleApp.WebApi/Controllers/ClassroomsController.cs
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
@@ -13,7 +12,7 @@ namespace ScheduleApp.WebApi.Controllers;
  *
  * Author: Mateo Quintero
  * Feature: #84 Validar código único de aula
- *          #85 Cambio de estado de aula
+ * #85 Cambio de estado de aula
  */
 [ApiController]
 [Route("api/[controller]")]
@@ -75,7 +74,7 @@ public class ClassroomsController : ControllerBase
     /// Criterio #84: retorna 409 si el código ya existe en otra aula.
     /// </summary>
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Classroom classroom)
+    public async Task<IActionResult> Update(Guid id, [FromBody] Classroom classroom)
     {
         try
         {
@@ -98,7 +97,7 @@ public class ClassroomsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         try
         {
@@ -123,9 +122,7 @@ public class ClassroomsController : ControllerBase
     /// Autor: Mateo Quintero
     /// Rama: 85-implementar-cambio-de-estado-de-aula
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ChangeStatus(
-        int id,
-        [FromBody] ChangeStatusDto dto)
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeStatusDto dto)
     {
         try
         {
