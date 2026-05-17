@@ -23,6 +23,16 @@ public class TeacherService : ITeacherService
         _subjectRepository = subjectRepository;
     }
 
+    /*
+ * Author: Salome Carmona
+ * Feature: Available Teachers
+ * Description: Handles available teachers business logic
+ */
+
+    public async Task<IEnumerable<Teacher>> GetAvailableTeachersAsync()
+    {
+        return await _teacherRepository.GetAvailableTeachersAsync();
+    }
     public async Task<IEnumerable<TeacherResponseDto>> SearchAsync(string? name, string? academicProgram, string? status)
     {
         bool? isActiveFilter = null;

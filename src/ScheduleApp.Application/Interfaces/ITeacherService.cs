@@ -1,7 +1,8 @@
-﻿using System;
+﻿using ScheduleApp.Application.DTOs;
+using ScheduleApp.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ScheduleApp.Application.DTOs;
 
 // Ruta recomendada: src/ScheduleApp.Application/Interfaces/ITeacherService.cs
 namespace ScheduleApp.Application.Interfaces;
@@ -12,6 +13,7 @@ namespace ScheduleApp.Application.Interfaces;
 /// </summary>
 public interface ITeacherService
 {
+    Task<IEnumerable<Teacher>> GetAvailableTeachersAsync();
     /// <summary>
     /// Retorna docentes con filtros opcionales.
     /// </summary>

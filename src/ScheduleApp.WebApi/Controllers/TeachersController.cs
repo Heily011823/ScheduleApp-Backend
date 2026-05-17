@@ -26,6 +26,19 @@ public class TeachersController : ControllerBase
         _teacherService = teacherService;
     }
 
+    /*
+ * Author: Salome Carmona
+ * Feature: Available Teachers
+ * Description: Endpoint to retrieve active teachers
+ */
+
+    [HttpGet("available")]
+    public async Task<IActionResult> GetAvailableTeachers()
+    {
+        var teachers = await _teacherService.GetAvailableTeachersAsync();
+
+        return Ok(teachers);
+    }
     /// <summary>
     /// Retorna la lista de docentes con filtros opcionales.
     /// </summary>

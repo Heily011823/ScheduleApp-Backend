@@ -23,6 +23,18 @@ public class TeacherRepository : ITeacherRepository
         _context = context;
     }
 
+    /*
+ * Author: Salome Carmona
+ * Feature: Available Teachers
+ * Description: Returns active and available teachers
+ */
+
+    public async Task<IEnumerable<Teacher>> GetAvailableTeachersAsync()
+    {
+        return await _context.Teachers
+            .Where(t => t.IsActive == true)
+            .ToListAsync();
+    }
     /// <summary>
     /// Busca docentes con filtros opcionales. (Alineado con la interfaz)
     /// </summary>

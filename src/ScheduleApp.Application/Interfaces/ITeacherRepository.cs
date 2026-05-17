@@ -11,6 +11,8 @@ namespace ScheduleApp.Application.Interfaces;
 /// </summary>
 public interface ITeacherRepository
 {
+
+    Task<IEnumerable<Teacher>> GetAvailableTeachersAsync();
     /// <summary>
     /// Retorna docentes con filtros opcionales.
     /// </summary>
