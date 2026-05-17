@@ -22,5 +22,8 @@ namespace ScheduleApp.Application.Interfaces
         Task UpdateAsync(Classroom classroom);
 
         Task DeleteAsync(int id);
+
+        /// <summary>Busca un aula por su código único.</summary>
+        Task<Classroom?> GetByCodeAsync(string code);
     }
 }

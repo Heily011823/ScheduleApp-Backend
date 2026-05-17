@@ -33,17 +33,31 @@ namespace ScheduleApp.Infrastructure.Repositories
             return await _context.Classrooms.FindAsync(id);
         }
 
+        /// <summary>
+        /// Crea un aula validando que el código sea único.
+        /// Criterio: si el código ya existe → error.
+        /// Criterio: si el código es único → permite guardar.
+        /// </summary>
+        /// Autor: Mateo Quintero
+        /// Version: 0.1
+        /// Rama: 84-validar-código-único-de-aula
         public async Task CreateAsync(Classroom classroom)
         {
             await _context.Classrooms.AddAsync(classroom);
-
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Actualiza un aula validando que el código sea único.
+        /// Criterio: si el código ya existe en otra aula → error.
+        /// Criterio: si el código es único → permite guardar.
+        /// </summary>
+        /// Autor: Mateo Quintero
+        /// Version: 0.1
+        /// Rama: 84-validar-código-único-de-aula
         public async Task UpdateAsync(Classroom classroom)
         {
             _context.Classrooms.Update(classroom);
-
             await _context.SaveChangesAsync();
         }
 
@@ -57,6 +71,18 @@ namespace ScheduleApp.Infrastructure.Repositories
 
                 await _context.SaveChangesAsync();
             }
+        }
+
+        /// <summary>
+        /// Busca un aula por su código único (case-insensitive).
+        /// </summary>
+        /// Autor: Mateo Quintero
+        /// Rama: 84-validar-código-único-de-aula
+        public async Task<Classroom?> GetByCodeAsync(string code)
+        {
+            return await _context.Classrooms
+                .FirstOrDefaultAsync(c =>
+                    c.Code.ToLower() == code.ToLower().Trim());
         }
     }
 }
