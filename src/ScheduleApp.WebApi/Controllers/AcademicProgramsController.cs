@@ -22,13 +22,44 @@ public class AcademicProgramsController : ControllerBase
         _context = context;
     }
 
+    /// <summary>
+    /// Retorna programas académicos con filtro opcional por nombre.
+    /// Criterio: si el parámetro viene vacío → retorna todos sin filtros.
+    /// Criterio: la búsqueda ignora mayúsculas, minúsculas y es parcial (LIKE).
+    /// </summary>
+    /// Autor: Mateo Quintero
+    /// Version: 0.1
+    /// Rama: 136-busqueda-nombre-programa
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] string? name)
     {
-        var programs = await _context.AcademicPrograms
-            .OrderBy(p => p.Code)
-            .ToListAsync();
-        return Ok(programs);
+        try
+        {
+            var query = _context.AcademicPrograms.AsQueryable();
+
+            // Criterio: si name viene vacío retorna todo sin filtros
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                // Criterio: ignora mayúsculas y minúsculas (LIKE %texto%)
+                var normalizedName = name.ToLower().Trim();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(normalizedName));
+            }
+
+            var programs = await query
+                .OrderBy(p => p.Code)
+                .ToListAsync();
+
+            return Ok(programs);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "Error al consultar programas.",
+                detail = ex.Message
+            });
+        }
     }
 
     /// <summary>
