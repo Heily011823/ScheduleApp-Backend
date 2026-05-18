@@ -5,4 +5,5 @@
     <Project Path="src/ScheduleApp.Infrastructure/ScheduleApp.Infrastructure.csproj" />
     <Project Path="src/ScheduleApp.WebApi/ScheduleApp.WebApi.csproj" />
   </Folder>
+  <Project Path="ScheduleApp.Tests/ScheduleApp.Tests.csproj" />
 </Solution>
