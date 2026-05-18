@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -21,9 +21,9 @@ var jwtSecret = builder.Configuration["Jwt:Secret"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-// Validaciones de seguridad para garantizar la presencia de variables críticas
+// Validaciones de seguridad para garantizar la presencia de variables criticas
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en el appsettings.");
+    throw new InvalidOperationException("Falta la cadena de conexion 'DefaultConnection' en el appsettings.");
 
 if (string.IsNullOrWhiteSpace(jwtSecret))
     throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
@@ -35,10 +35,10 @@ if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
 
 // =========================================================================
-// REGISTRO DE SERVICIOS (CONTENEDOR DE INYECCIÓN DE DEPENDENCIAS)
+// REGISTRO DE SERVICIOS (CONTENEDOR DE INYECCION DE DEPENDENCIAS)
 // =========================================================================
 
-// Módulo de Aulas (Configurado y Corregido)
+// Modulo de Aulas
 builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
 builder.Services.AddScoped<IClassroomService, ClassroomService>();
 builder.Services.AddScoped<IClassroomAvailabilityService, AvailabilityService>();
@@ -50,7 +50,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Controladores de la API
 builder.Services.AddControllers();
 
-// Documentación de la API con Swagger
+// Documentacion de la API con Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -61,7 +61,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Módulo de Docentes
+// Modulo de Docentes
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
 
@@ -69,7 +69,7 @@ builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
 builder.Services.AddScoped<TapsiService>();
 
-// Autenticación basada en Tokens JWT
+// Autenticacion basada en Tokens JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -85,26 +85,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Módulo de Usuarios y Autenticación (Auth)
+// Modulo de Usuarios y Autenticacion (Auth)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtService>(provider => new JwtService(jwtSecret, jwtIssuer, jwtAudience));
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<AuthService>();
 
-// Módulo de Materias y Asignaciones (Soportan Paginación Eficiente)
+// Modulo de Materias y Asignaciones
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ISubjectService, SubjectService>();
 builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
+// Modulo de Generacion automatica de horarios (HU-32)
+builder.Services.AddScoped<IScheduleGenerationService, ScheduleGenerationService>();
+
 var app = builder.Build();
 
 // =========================================================================
-// CONFIGURACIÓN DEL PIPELINE DE PETICIONES HTTP (MIDDLEWARES)
+// CONFIGURACION DEL PIPELINE DE PETICIONES HTTP (MIDDLEWARES)
 // =========================================================================
 
-// Activar interfaz gráfica de Swagger en entornos de desarrollo y pruebas
+// Activar interfaz grafica de Swagger en entornos de desarrollo y pruebas
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
@@ -112,12 +115,12 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
 });
 
-// Seguridad: Validar quién es el usuario (AuthN) y a qué tiene permiso (AuthZ)
+// Seguridad: Validar quien es el usuario (AuthN) y a que tiene permiso (AuthZ)
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Mapeo de los controladores de la API hacia sus rutas correspondientes
 app.MapControllers();
 
-// Arrancar la aplicación web
+// Arrancar la aplicacion web
 app.Run();
