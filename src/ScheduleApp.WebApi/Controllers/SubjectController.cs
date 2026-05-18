@@ -97,4 +97,16 @@ public class SubjectController : ControllerBase
             "materias.xlsx"
         );
     }
+
+    [HttpGet("export/pdf")]
+    public async Task<IActionResult> ExportSubjectsToPdf()
+    {
+        var file = await _subjectService.ExportSubjectsToPdfAsync();
+
+        return File(
+            file,
+            "text/html",
+            "materias.html"
+        );
+    }
 }
