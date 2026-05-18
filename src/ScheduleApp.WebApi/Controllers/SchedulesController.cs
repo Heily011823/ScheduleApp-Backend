@@ -1,5 +1,7 @@
 ﻿// Autor: Jacobo
 // Version: 0.1
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
@@ -8,6 +10,7 @@ namespace ScheduleApp.WebApi.Controllers
 {
     [ApiController]
     [Route("api/schedules")]
+    [Authorize]
     public class SchedulesController : ControllerBase
     {
         private readonly IScheduleGenerationService _generationService;
@@ -17,26 +20,41 @@ namespace ScheduleApp.WebApi.Controllers
             _generationService = generationService;
         }
 
-        // Genera automaticamente un horario para el programa, semestre y jornada solicitados.
-        // - 200 OK: si pudo asignar al menos una materia (puede traer warnings).
-        // - 422 Unprocessable Entity: si no pudo asignar ninguna materia o el input es invalido.
-        // - 400 Bad Request: si el cuerpo de la peticion esta malformado.
+        // Genera automáticamente un horario para el programa, semestre y jornada solicitados.
+        // 200 OK: si pudo asignar al menos una materia.
+        // 422 Unprocessable Entity: si no pudo asignar ninguna materia o el input es inválido.
+        // 400 Bad Request: si el cuerpo de la petición está malformado.
         [HttpPost("generate")]
-        public async Task<IActionResult> Generate([FromBody] GenerateScheduleRequestDto request)
+        public async Task<IActionResult> Generate(
+            [FromBody] GenerateScheduleRequestDto request)
         {
-            if (request is null)
+            try
             {
-                return BadRequest(new { message = "El cuerpo de la peticion no puede ser nulo." });
+                if (request is null)
+                {
+                    return BadRequest(new
+                    {
+                        message = "El cuerpo de la petición no puede ser nulo."
+                    });
+                }
+
+                var result = await _generationService.GenerateAsync(request);
+
+                if (!result.Success)
+                {
+                    return UnprocessableEntity(result);
+                }
+
+                return Ok(result);
             }
-
-            var result = await _generationService.GenerateAsync(request);
-
-            if (!result.Success)
+            catch (Exception ex)
             {
-                return UnprocessableEntity(result);
+                return StatusCode(500, new
+                {
+                    message = "Error al generar el horario.",
+                    detail = ex.Message
+                });
             }
-
-            return Ok(result);
         }
     }
 }
