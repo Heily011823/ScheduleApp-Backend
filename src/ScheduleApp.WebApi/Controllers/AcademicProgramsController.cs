@@ -6,6 +6,8 @@ using System.Text;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using ClosedXML.Excel;
+using System.IO;
 
 namespace ScheduleApp.WebApi.Controllers;
 
@@ -97,5 +99,61 @@ public class AcademicProgramsController : ControllerBase
         var htmlBytes = Encoding.UTF8.GetBytes(html.ToString());
 
         return File(htmlBytes, "text/html", "reporte_programas_academicos.html");
+    }
+
+    /// <summary>
+    /// Exporta el listado de programas académicos en formato Excel.
+    /// </summary>
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportExcel()
+    {
+        var programs = await _context.AcademicPrograms
+            .OrderBy(p => p.Code)
+            .ToListAsync();
+
+        using (var workbook = new XLWorkbook())
+        {
+            var worksheet = workbook.Worksheets.Add("Programas");
+
+            // Encabezados
+            worksheet.Cell(1, 1).Value = "Código";
+            worksheet.Cell(1, 2).Value = "Nombre";
+            worksheet.Cell(1, 3).Value = "Jornada";
+            worksheet.Cell(1, 4).Value = "Número de Semestres";
+            worksheet.Cell(1, 5).Value = "Estado";
+
+            // Estilo encabezados
+            var headerRange = worksheet.Range(1, 1, 1, 5);
+
+            headerRange.Style.Font.Bold = true;
+
+            int row = 2;
+
+            foreach (var p in programs)
+            {
+                worksheet.Cell(row, 1).Value = p.Code;
+                worksheet.Cell(row, 2).Value = p.Name;
+                worksheet.Cell(row, 3).Value = p.Shift;
+                worksheet.Cell(row, 4).Value = p.TotalSemesters;
+                worksheet.Cell(row, 5).Value = p.IsActive ? "Activa" : "Inactiva";
+
+                row++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+
+                var content = stream.ToArray();
+
+                return File(
+                    content,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "programas_academicos.xlsx"
+                );
+            }
+        }
     }
 }
