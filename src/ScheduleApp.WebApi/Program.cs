@@ -23,7 +23,8 @@ var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 // Validaciones de seguridad
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Falta la cadena de conexion 'DefaultConnection' en el appsettings.");
+  throw new InvalidOperationException("Falta la cadena de conexion 'DefaultConnection' en el appsettings.");
+
 
 if (string.IsNullOrWhiteSpace(jwtSecret))
     throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
@@ -42,10 +43,11 @@ if (string.IsNullOrWhiteSpace(jwtAudience))
 builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
 builder.Services.AddScoped<IClassroomService, ClassroomService>();
 builder.Services.AddScoped<IClassroomAvailabilityService, AvailabilityService>();
-
+builder.Services.AddScoped<IProgramSemesterRepository, ProgramSemesterRepository>();
+builder.Services.AddScoped<ProgramSemesterService>();
 // Base de datos
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+  options.UseSqlServer(connectionString));
 
 // Controladores
 builder.Services.AddControllers();
