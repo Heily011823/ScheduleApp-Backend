@@ -20,4 +20,5 @@ public interface ISubjectService
         int page,
         int pageSize
     );
+    Task<byte[]> ExportSubjectsToExcelAsync();
 }

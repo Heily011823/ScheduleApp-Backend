@@ -1,16 +1,74 @@
 ﻿using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
+using ClosedXML.Excel;
+using System.IO;
+using System.Text;
 
 namespace ScheduleApp.Application.Services
 {
     public class SubjectService : ISubjectService
     {
+        private const int PageSize = 1000;
         private readonly ISubjectRepository _subjectRepository;
 
         public SubjectService(ISubjectRepository subjectRepository)
         {
             _subjectRepository = subjectRepository;
+        }
+
+        public async Task<byte[]> ExportSubjectsToExcelAsync()
+        {
+            var (subjects, totalCount) = await _subjectRepository.SearchAsync(
+            null,
+            null,
+            null,
+            1,
+            1000
+            );
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Materias");
+
+                // Encabezados
+                worksheet.Cell(1, 1).Value = "Código";
+                worksheet.Cell(1, 2).Value = "Nombre";
+                worksheet.Cell(1, 3).Value = "Semestre";
+                worksheet.Cell(1, 4).Value = "Créditos";
+                worksheet.Cell(1, 5).Value = "Horas Semanales";
+                worksheet.Cell(1, 6).Value = "Estado";
+
+                // Estilo encabezados
+                var headerRange = worksheet.Range(1, 1, 1, 6);
+
+                headerRange.Style.Font.Bold = true;
+
+                int row = 2;
+
+                foreach (var subject in subjects)
+                {
+                    worksheet.Cell(row, 1).Value = subject.Code;
+                    worksheet.Cell(row, 2).Value = subject.Name;
+                    worksheet.Cell(row, 3).Value = subject.Semester;
+                    worksheet.Cell(row, 4).Value = subject.Credits;
+                    worksheet.Cell(row, 5).Value = subject.WeeklyHours;
+                    worksheet.Cell(row, 6).Value = subject.IsActive
+                        ? "Activa"
+                        : "Inactiva";
+
+                    row++;
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+
+                    return stream.ToArray();
+                }
+            }
         }
 
         public async Task CreateSubjectAsync(CreateSubjectDto dto)
