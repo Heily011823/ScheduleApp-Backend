@@ -71,6 +71,75 @@ namespace ScheduleApp.Application.Services
             }
         }
 
+        public async Task<byte[]> ExportSubjectsToPdfAsync()
+        {
+            var subjects = new List<Subject>
+            {
+                new Subject
+                {
+                    Code = "103004",
+                    Name = "Teoría de Sistemas",
+                    Semester = 1,
+                    Credits = 3,
+                    WeeklyHours = 3,
+                    IsActive = true
+                },
+
+                new Subject
+                {
+                    Code = "103026",
+                    Name = "Redes LAN",
+                    Semester = 5,
+                    Credits = 3,
+                    WeeklyHours = 4,
+                    IsActive = true
+                }
+            };
+
+            var html = new StringBuilder();
+
+            html.AppendLine("<html><body>");
+
+            html.AppendLine("<h1>Reporte de Materias</h1>");
+
+            html.AppendLine(
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;width:100%'>"
+            );
+
+            html.AppendLine("<thead><tr>");
+
+            html.AppendLine(
+                "<th>Código</th>" +
+                "<th>Nombre</th>" +
+                "<th>Semestre</th>" +
+                "<th>Créditos</th>" +
+                "<th>Horas Semanales</th>" +
+                "<th>Estado</th>"
+            );
+
+            html.AppendLine("</tr></thead><tbody>");
+
+            foreach (var subject in subjects)
+            {
+                html.AppendLine("<tr>");
+
+                html.AppendLine($"<td>{subject.Code}</td>");
+                html.AppendLine($"<td>{subject.Name}</td>");
+                html.AppendLine($"<td>{subject.Semester}</td>");
+                html.AppendLine($"<td>{subject.Credits}</td>");
+                html.AppendLine($"<td>{subject.WeeklyHours}</td>");
+                html.AppendLine(
+                    $"<td>{(subject.IsActive ? "Activa" : "Inactiva")}</td>"
+                );
+
+                html.AppendLine("</tr>");
+            }
+
+            html.AppendLine("</tbody></table></body></html>");
+
+            return Encoding.UTF8.GetBytes(html.ToString());
+        }
+
         public async Task CreateSubjectAsync(CreateSubjectDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Code))
