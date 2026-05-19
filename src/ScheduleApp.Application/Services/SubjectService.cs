@@ -77,6 +77,7 @@ namespace ScheduleApp.Application.Services
             subject.Semester = dto.Semester;
             subject.Credits = dto.Credits;
             subject.WeeklyHours = dto.WeeklyHours;
+            subject.IsActive = dto.IsActive; // ✅ Agregada
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -99,7 +100,6 @@ namespace ScheduleApp.Application.Services
             return true;
         }
 
-      
         public async Task<PagedResultDto<Subject>> SearchSubjectsAsync(
             string? search,
             int? semester,
@@ -107,7 +107,6 @@ namespace ScheduleApp.Application.Services
             int page,
             int pageSize)
         {
-            // Consume la tupla del repositorio de manera limpia usando las variables correctas
             var (items, totalCount) = await _subjectRepository.SearchAsync(
                 search,
                 semester,
@@ -115,7 +114,6 @@ namespace ScheduleApp.Application.Services
                 page,
                 pageSize);
 
-            // Mapea la información al envoltorio genérico de la aplicación
             return new PagedResultDto<Subject>
             {
                 Items = items,
