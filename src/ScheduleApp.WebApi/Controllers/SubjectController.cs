@@ -85,4 +85,28 @@ public class SubjectController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportSubjectsToExcel()
+    {
+        var file = await _subjectService.ExportSubjectsToExcelAsync();
+
+        return File(
+            file,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "materias.xlsx"
+        );
+    }
+
+    [HttpGet("export/pdf")]
+    public async Task<IActionResult> ExportSubjectsToPdf()
+    {
+        var file = await _subjectService.ExportSubjectsToPdfAsync();
+
+        return File(
+            file,
+            "text/html",
+            "materias.html"
+        );
+    }
 }

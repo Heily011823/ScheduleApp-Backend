@@ -1,16 +1,143 @@
 ﻿using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
+using ClosedXML.Excel;
+using System.IO;
+using System.Text;
 
 namespace ScheduleApp.Application.Services
 {
     public class SubjectService : ISubjectService
     {
+        private const int PageSize = 1000;
         private readonly ISubjectRepository _subjectRepository;
 
         public SubjectService(ISubjectRepository subjectRepository)
         {
             _subjectRepository = subjectRepository;
+        }
+
+        public async Task<byte[]> ExportSubjectsToExcelAsync()
+        {
+            var (subjects, totalCount) = await _subjectRepository.SearchAsync(
+            null,
+            null,
+            null,
+            1,
+            1000
+            );
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Materias");
+
+                // Encabezados
+                worksheet.Cell(1, 1).Value = "Código";
+                worksheet.Cell(1, 2).Value = "Nombre";
+                worksheet.Cell(1, 3).Value = "Semestre";
+                worksheet.Cell(1, 4).Value = "Créditos";
+                worksheet.Cell(1, 5).Value = "Horas Semanales";
+                worksheet.Cell(1, 6).Value = "Estado";
+
+                // Estilo encabezados
+                var headerRange = worksheet.Range(1, 1, 1, 6);
+
+                headerRange.Style.Font.Bold = true;
+
+                int row = 2;
+
+                foreach (var subject in subjects)
+                {
+                    worksheet.Cell(row, 1).Value = subject.Code;
+                    worksheet.Cell(row, 2).Value = subject.Name;
+                    worksheet.Cell(row, 3).Value = subject.Semester;
+                    worksheet.Cell(row, 4).Value = subject.Credits;
+                    worksheet.Cell(row, 5).Value = subject.WeeklyHours;
+                    worksheet.Cell(row, 6).Value = subject.IsActive
+                        ? "Activa"
+                        : "Inactiva";
+
+                    row++;
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+
+                    return stream.ToArray();
+                }
+            }
+        }
+
+        public async Task<byte[]> ExportSubjectsToPdfAsync()
+        {
+            var subjects = new List<Subject>
+            {
+                new Subject
+                {
+                    Code = "103004",
+                    Name = "Teoría de Sistemas",
+                    Semester = 1,
+                    Credits = 3,
+                    WeeklyHours = 3,
+                    IsActive = true
+                },
+
+                new Subject
+                {
+                    Code = "103026",
+                    Name = "Redes LAN",
+                    Semester = 5,
+                    Credits = 3,
+                    WeeklyHours = 4,
+                    IsActive = true
+                }
+            };
+
+            var html = new StringBuilder();
+
+            html.AppendLine("<html><body>");
+
+            html.AppendLine("<h1>Reporte de Materias</h1>");
+
+            html.AppendLine(
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;width:100%'>"
+            );
+
+            html.AppendLine("<thead><tr>");
+
+            html.AppendLine(
+                "<th>Código</th>" +
+                "<th>Nombre</th>" +
+                "<th>Semestre</th>" +
+                "<th>Créditos</th>" +
+                "<th>Horas Semanales</th>" +
+                "<th>Estado</th>"
+            );
+
+            html.AppendLine("</tr></thead><tbody>");
+
+            foreach (var subject in subjects)
+            {
+                html.AppendLine("<tr>");
+
+                html.AppendLine($"<td>{subject.Code}</td>");
+                html.AppendLine($"<td>{subject.Name}</td>");
+                html.AppendLine($"<td>{subject.Semester}</td>");
+                html.AppendLine($"<td>{subject.Credits}</td>");
+                html.AppendLine($"<td>{subject.WeeklyHours}</td>");
+                html.AppendLine(
+                    $"<td>{(subject.IsActive ? "Activa" : "Inactiva")}</td>"
+                );
+
+                html.AppendLine("</tr>");
+            }
+
+            html.AppendLine("</tbody></table></body></html>");
+
+            return Encoding.UTF8.GetBytes(html.ToString());
         }
 
         public async Task CreateSubjectAsync(CreateSubjectDto dto)
