@@ -142,9 +142,9 @@ public class UserServiceTests
         _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Once);
     }
 
-    // CDA 5: Eliminar / desactivar usuario.
+    // CDA 5: Eliminar usuario (soft delete con IsDeleted, no IsActive).
     [Fact]
-    public async Task DeleteUserAsync_WhenUserActive_ShouldDeactivateAndReturnTrue()
+    public async Task DeleteUserAsync_WhenUserActive_ShouldMarkAsDeletedAndReturnTrue()
     {
         var userId = Guid.NewGuid();
         var user = new User
@@ -152,7 +152,8 @@ public class UserServiceTests
             Id = userId,
             FullName = "Test",
             Email = "test@test.com",
-            IsActive = true
+            IsActive = true,
+            IsDeleted = false
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
         _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>()))
@@ -161,8 +162,8 @@ public class UserServiceTests
         var result = await _service.DeleteUserAsync(userId);
 
         result.Should().BeTrue();
-        user.IsActive.Should().BeFalse();
-        _userRepoMock.Verify(r => r.UpdateAsync(It.Is<User>(u => !u.IsActive)), Times.Once);
+        user.IsDeleted.Should().BeTrue();
+        _userRepoMock.Verify(r => r.UpdateAsync(It.Is<User>(u => u.IsDeleted)), Times.Once);
     }
 
     // CDA 6: Asignar rol Administrador a un usuario.
