@@ -1,16 +1,38 @@
 ﻿// Autor: Jacobo
-// Version: 0.1
+// Version: 0.2 - HU-74 validacion de cruces de docentes y aulas
 
 using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
+using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
 
 namespace ScheduleApp.Infrastructure.Repositories
 {
+    // Repositorio del modulo de generacion de horarios.
+    //
+    // Mejoras de HU-74:
+    //   - Antes de asignar una materia se valida que el docente no este ocupado
+    //     en ese slot (en BD o en lo que ya se genero en esta corrida).
+    //   - Tambien se valida que el aula no este ocupada en ese slot.
+    //   - Si el slot esta ocupado, el algoritmo prueba la siguiente combinacion
+    //     (otro horario u otra aula) hasta encontrar uno libre.
+    //   - Si no encuentra slot libre para la materia, se omite (no se agrega al
+    //     resultado). El service que llama a este repo puede registrar warnings.
+    //
+    // Solapamiento de intervalos (formula clasica):
+    //   Dos rangos [a.start, a.end] y [b.start, b.end] se solapan si
+    //   a.StartTime < b.EndTime AND a.EndTime > b.StartTime.
     public class ScheduleRepository : IScheduleRepository
     {
         private readonly AppDbContext _context;
+
+        // Configuracion del algoritmo greedy
+        private static readonly TimeSpan ClassDuration = new TimeSpan(1, 0, 0);
+        private static readonly TimeSpan DayStart = new TimeSpan(7, 0, 0);
+        private static readonly TimeSpan DayEnd = new TimeSpan(12, 0, 0);
+        private const int FirstDay = 1; // Lunes
+        private const int LastDay = 5;  // Viernes
 
         public ScheduleRepository(AppDbContext context)
         {
@@ -29,26 +51,22 @@ namespace ScheduleApp.Infrastructure.Repositories
             string shift)
         {
             var academicProgram = await _context.AcademicPrograms
-                .FirstOrDefaultAsync(program =>
-                    program.Id == academicProgramId &&
-                    program.IsActive);
+                .FirstOrDefaultAsync(p => p.Id == academicProgramId && p.IsActive);
 
             if (academicProgram == null)
                 return new List<GeneratedScheduleEntryDto>();
 
             var subjects = await _context.Subjects
-                .Where(subject =>
-                    subject.Semester == semesterNumber &&
-                    subject.IsActive)
-                .OrderBy(subject => subject.Name)
+                .Where(s => s.Semester == semesterNumber && s.IsActive)
+                .OrderBy(s => s.Name)
                 .ToListAsync();
 
             if (!subjects.Any())
                 return new List<GeneratedScheduleEntryDto>();
 
             var classrooms = await _context.Classrooms
-                .Where(classroom => classroom.IsActive)
-                .OrderBy(classroom => classroom.Code)
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Code)
                 .ToListAsync();
 
             if (!classrooms.Any())
@@ -63,14 +81,14 @@ namespace ScheduleApp.Infrastructure.Repositories
                     ts.Subject.IsActive)
                 .ToListAsync();
 
+            // Cargar Schedules existentes en BD. Son la base para validar
+            // que un docente o aula ya este ocupado en algun slot.
+            var existingSchedules = await _context.Schedules.ToListAsync();
+
             var generatedSchedules = new List<GeneratedScheduleEntryDto>();
 
-            int day = 1; // 1 = Lunes
-            TimeSpan startTime = new TimeSpan(7, 0, 0);
-            TimeSpan classDuration = new TimeSpan(1, 0, 0);
-
-            int classroomIndex = 0;
-
+            // Para cada materia, buscar la primera combinacion (dia + hora + aula)
+            // que este libre tanto para el docente como para el aula.
             foreach (var subject in subjects)
             {
                 var teacherSubject = teacherSubjects
@@ -79,54 +97,135 @@ namespace ScheduleApp.Infrastructure.Repositories
                 if (teacherSubject == null)
                     continue;
 
-                var classroom = classrooms[classroomIndex];
+                var teacher = teacherSubject.Teacher;
+                bool assigned = false;
 
-                generatedSchedules.Add(new GeneratedScheduleEntryDto
+                // Probar slots: dia 1..5 (lunes a viernes), hora 7..11
+                for (int day = FirstDay; day <= LastDay && !assigned; day++)
                 {
-                    Id = Guid.NewGuid(),
+                    for (var slotStart = DayStart;
+                         slotStart < DayEnd && !assigned;
+                         slotStart = slotStart.Add(ClassDuration))
+                    {
+                        var slotEnd = slotStart.Add(ClassDuration);
 
-                    SubjectId = subject.Id,
-                    SubjectCode = subject.Code,
-                    SubjectName = subject.Name,
-                    Credits = subject.Credits,
-                    WeeklyHours = subject.WeeklyHours,
-                    IsTapsi = subject.IsTapsi,
+                        // Probar cada aula en este slot
+                        foreach (var classroom in classrooms)
+                        {
+                            if (IsTeacherBusy(
+                                    existingSchedules, generatedSchedules,
+                                    teacher.Id, day, slotStart, slotEnd))
+                            {
+                                // El docente ya tiene otra clase en este slot,
+                                // saltar a la siguiente aula (no sirve, el docente
+                                // es el limitante en este horario).
+                                break;
+                            }
 
-                    TeacherId = teacherSubject.Teacher.Id,
-                    TeacherFullName = $"{teacherSubject.Teacher.FirstName} {teacherSubject.Teacher.LastName}",
+                            if (IsClassroomBusy(
+                                    existingSchedules, generatedSchedules,
+                                    classroom.Id, day, slotStart, slotEnd))
+                            {
+                                // El aula esta ocupada, probar la siguiente
+                                continue;
+                            }
 
-                    ClassroomId = classroom.Id,
-                    ClassroomCode = classroom.Code,
-                    ClassroomName = classroom.Name,
+                            // Slot libre, asignar
+                            generatedSchedules.Add(new GeneratedScheduleEntryDto
+                            {
+                                Id = Guid.NewGuid(),
 
-                    Day = day,
-                    StartTime = startTime,
-                    EndTime = startTime.Add(classDuration),
+                                SubjectId = subject.Id,
+                                SubjectCode = subject.Code,
+                                SubjectName = subject.Name,
+                                Credits = subject.Credits,
+                                WeeklyHours = subject.WeeklyHours,
+                                IsTapsi = subject.IsTapsi,
 
-                    AcademicProgram = academicProgram.Name,
-                    Shift = shift,
-                    Semester = semesterNumber,
-                    Status = "Draft"
-                });
+                                TeacherId = teacher.Id,
+                                TeacherFullName = $"{teacher.FirstName} {teacher.LastName}",
 
-                startTime = startTime.Add(classDuration);
+                                ClassroomId = classroom.Id,
+                                ClassroomCode = classroom.Code,
+                                ClassroomName = classroom.Name,
 
-                if (startTime >= new TimeSpan(12, 0, 0))
-                {
-                    startTime = new TimeSpan(7, 0, 0);
-                    day++;
+                                Day = day,
+                                StartTime = slotStart,
+                                EndTime = slotEnd,
+
+                                AcademicProgram = academicProgram.Name,
+                                Shift = shift,
+                                Semester = semesterNumber,
+                                Status = "Draft"
+                            });
+
+                            assigned = true;
+                            break;
+                        }
+                    }
                 }
 
-                if (day > 6)
-                    day = 1;
-
-                classroomIndex++;
-
-                if (classroomIndex >= classrooms.Count)
-                    classroomIndex = 0;
+                // Si !assigned: no se encontro slot libre para esta materia.
+                // No se agrega al resultado. El service deberia registrar un warning
+                // pero por contrato del IScheduleRepository solo retornamos los que
+                // si se pudieron asignar.
             }
 
             return generatedSchedules;
+        }
+
+        // ============================================================
+        // VALIDACIONES DE CRUCES (HU-74)
+        // ============================================================
+
+        // El docente esta ocupado en (day, start, end) si tiene un Schedule
+        // existente en BD o un Schedule recien generado que solape ese rango.
+        private static bool IsTeacherBusy(
+            IEnumerable<Schedule> existingSchedules,
+            IEnumerable<GeneratedScheduleEntryDto> generatedSchedules,
+            Guid teacherId,
+            int day,
+            TimeSpan start,
+            TimeSpan end)
+        {
+            bool inExisting = existingSchedules.Any(s =>
+                s.TeacherId == teacherId &&
+                (int)s.Day == day &&
+                s.StartTime < end && s.EndTime > start);
+
+            if (inExisting) return true;
+
+            bool inGenerated = generatedSchedules.Any(s =>
+                s.TeacherId == teacherId &&
+                s.Day == day &&
+                s.StartTime < end && s.EndTime > start);
+
+            return inGenerated;
+        }
+
+        // El aula esta ocupada en (day, start, end) si tiene un Schedule
+        // existente en BD o un Schedule recien generado que solape ese rango.
+        private static bool IsClassroomBusy(
+            IEnumerable<Schedule> existingSchedules,
+            IEnumerable<GeneratedScheduleEntryDto> generatedSchedules,
+            Guid classroomId,
+            int day,
+            TimeSpan start,
+            TimeSpan end)
+        {
+            bool inExisting = existingSchedules.Any(s =>
+                s.ClassroomId == classroomId &&
+                (int)s.Day == day &&
+                s.StartTime < end && s.EndTime > start);
+
+            if (inExisting) return true;
+
+            bool inGenerated = generatedSchedules.Any(s =>
+                s.ClassroomId == classroomId &&
+                s.Day == day &&
+                s.StartTime < end && s.EndTime > start);
+
+            return inGenerated;
         }
     }
 }
