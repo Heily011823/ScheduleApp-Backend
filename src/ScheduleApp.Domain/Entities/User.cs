@@ -15,6 +15,12 @@ public class User
     public Guid RoleId { get; set; }
     public Role Role { get; set; } = null!;
 
+    // Estado funcional: puede variar entre activo e inactivo.
     public bool IsActive { get; set; } = true;
+
+    // Eliminacion logica: una vez true, el usuario queda fuera del sistema permanentemente.
+    // No debe revertirse. Lo distingue del estado IsActive que si puede cambiar.
+    public bool IsDeleted { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

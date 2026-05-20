@@ -37,8 +37,7 @@ namespace ScheduleApp.Application.Services
         }
 
 
-        // Detalle de usuario por Id (HU-58). Devuelve null si no existe.
-        // Reutiliza GetByIdAsync del repo que ya carga el Role relacionado.
+        // Detalle de usuario por Id (HU-58). Devuelve null si no existe o esta eliminado.
         public async Task<UserResponseDto?> GetUserByIdAsync(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
@@ -49,8 +48,7 @@ namespace ScheduleApp.Application.Services
             return MapToResponseDto(user);
         }
 
-        // Paginacion con filtros (HU-58). Devuelve un PagedResultDto con los UserResponseDto
-        // de la pagina pedida y la metadata (totalCount, page, pageSize).
+        // Paginacion con filtros (HU-58).
         public async Task<PagedResultDto<UserResponseDto>> GetPagedUsersAsync(
             string? name,
             string? role,
@@ -93,6 +91,7 @@ namespace ScheduleApp.Application.Services
                 PasswordHash = _passwordHasher.Hash(dto.Password),
                 RoleId = GetRoleId(dto.Role),
                 IsActive = dto.Status == "Activo",
+                IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -138,6 +137,9 @@ namespace ScheduleApp.Application.Services
             return MapToResponseDto(user);
         }
 
+        // Eliminacion logica del usuario (soft delete).
+        // Cambia IsDeleted = true (permanente), no IsActive (que puede variar).
+        // Siguiendo el patron pedido por Heili: IsActive es funcional, IsDeleted es definitivo.
         public async Task<bool> DeleteUserAsync(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
@@ -145,10 +147,10 @@ namespace ScheduleApp.Application.Services
             if (user == null)
                 return false;
 
-            if (!user.IsActive)
+            if (user.IsDeleted)
                 return true;
 
-            user.IsActive = false;
+            user.IsDeleted = true;
 
             await _userRepository.UpdateAsync(user);
 
@@ -178,4 +180,3 @@ namespace ScheduleApp.Application.Services
         }
     }
 }
-

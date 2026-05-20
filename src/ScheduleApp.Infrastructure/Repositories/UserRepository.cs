@@ -22,7 +22,8 @@ public class UserRepository : IUserRepository
         return await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
-                u.Email == normalizedEmail);
+                u.Email == normalizedEmail &&
+                !u.IsDeleted);
     }
 
     public async Task<User?> GetByEmailOrUsernameAsync(string login)
@@ -32,15 +33,18 @@ public class UserRepository : IUserRepository
         return await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
-                u.Email == normalizedLogin ||
-                u.Username.ToLower() == normalizedLogin);
+                (u.Email == normalizedLogin ||
+                 u.Username.ToLower() == normalizedLogin) &&
+                !u.IsDeleted);
     }
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
         return await _context.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Id == id);
+            .FirstOrDefaultAsync(u =>
+                u.Id == id &&
+                !u.IsDeleted);
     }
 
     public async Task<IEnumerable<User>> SearchUsersAsync(
@@ -50,6 +54,7 @@ public class UserRepository : IUserRepository
     {
         var query = _context.Users
             .Include(u => u.Role)
+            .Where(u => !u.IsDeleted)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
@@ -78,6 +83,7 @@ public class UserRepository : IUserRepository
 
     // Paginacion con filtros (HU-58).
     // Reutiliza la misma logica de filtros que SearchUsersAsync, aplica Skip/Take y devuelve el total.
+    // Tambien filtra IsDeleted para no incluir usuarios eliminados logicamente.
     public async Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
         string? name,
         string? role,
@@ -87,6 +93,7 @@ public class UserRepository : IUserRepository
     {
         var query = _context.Users
             .Include(u => u.Role)
+            .Where(u => !u.IsDeleted)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
