@@ -21,6 +21,11 @@ public class AcademicProgramsController : ControllerBase
 {
     private readonly AppDbContext _context;
 
+    // Bandera estatica para inicializar la licencia community de QuestPDF una sola vez.
+    // Es defensiva: si el equipo borra Program.cs, este controller sigue funcionando.
+    private static bool _questPdfInitialized = false;
+    private static readonly object _questPdfLock = new();
+
     public AcademicProgramsController(AppDbContext context)
     {
         _context = context;
@@ -33,7 +38,6 @@ public class AcademicProgramsController : ControllerBase
     {
         try
         {
-            // Filtro principal: nunca retornar programas eliminados logicamente.
             var query = _context.AcademicPrograms
                 .Where(p => !p.IsDeleted)
                 .AsQueryable();
@@ -132,8 +136,6 @@ public class AcademicProgramsController : ControllerBase
     }
 
     // Edita un programa academico existente.
-    // No permite cambiar TotalSemesters (porque romperia los ProgramSemesters ya creados).
-    // No toca IsDeleted (para eso esta el endpoint DELETE).
     // Autor: Jacobo - HU-127
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAcademicProgramDto dto)
@@ -150,14 +152,12 @@ public class AcademicProgramsController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Shift))
             return BadRequest(new { message = "La jornada es requerida." });
 
-        // Solo se editan programas no eliminados logicamente.
         var program = await _context.AcademicPrograms
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
 
         if (program is null)
             return NotFound(new { message = $"No se encontro el programa con Id '{id}'." });
 
-        // Verificar que el nuevo codigo no este en uso por OTRO programa no eliminado.
         var codeNormalized = dto.Code.Trim();
         var duplicateCode = await _context.AcademicPrograms
             .AnyAsync(p => p.Code == codeNormalized && p.Id != id && !p.IsDeleted);
@@ -186,8 +186,6 @@ public class AcademicProgramsController : ControllerBase
     }
 
     // Eliminacion logica del programa academico (soft delete).
-    // Cambia IsDeleted = true y mantiene el registro en BD.
-    // Validacion: no se puede eliminar un programa que tenga horarios asociados.
     // Autor: Jacobo - HU-127
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
@@ -206,8 +204,6 @@ public class AcademicProgramsController : ControllerBase
                 program.IsDeleted
             });
 
-        // Validar que no haya horarios amarrados al programa.
-        // Schedule.AcademicProgram es un string (nombre del programa), no FK.
         var hasSchedules = await _context.Schedules
             .AnyAsync(s => s.AcademicProgram == program.Name);
 
@@ -232,39 +228,129 @@ public class AcademicProgramsController : ControllerBase
         });
     }
 
-    // Exporta el listado de programas no eliminados.
+    // Exporta el listado de programas no eliminados como PDF real usando QuestPDF.
+    // Incluye header con titulo y fecha, tabla con filas alternadas (zebra), y footer
+    // con paginacion. Reemplaza la version anterior que devolvia HTML.
+    // Autor: Jacobo - HU-132 v2
     [HttpGet("export/pdf")]
     public async Task<IActionResult> ExportPdf()
     {
+        EnsureQuestPdfLicense();
+
         var programs = await _context.AcademicPrograms
             .Where(p => !p.IsDeleted)
             .OrderBy(p => p.Code)
             .ToListAsync();
 
-        var html = new StringBuilder();
-        html.AppendLine("<html><body>");
-        html.AppendLine("<h1>Reporte de Programas Academicos</h1>");
-        html.AppendLine("<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;width:100%'>");
-        html.AppendLine("<thead><tr>");
-        html.AppendLine("<th>Codigo</th><th>Nombre</th><th>Jornada</th><th>No Semestres</th><th>Estado</th>");
-        html.AppendLine("</tr></thead><tbody>");
+        var generatedAt = DateTime.Now;
 
-        foreach (var p in programs)
+        var document = Document.Create(container =>
         {
-            html.AppendLine("<tr>");
-            html.AppendLine($"<td>{p.Code}</td>");
-            html.AppendLine($"<td>{p.Name}</td>");
-            html.AppendLine($"<td>{p.Shift}</td>");
-            html.AppendLine($"<td>{p.TotalSemesters}</td>");
-            html.AppendLine($"<td>{(p.IsActive ? "Activa" : "Inactiva")}</td>");
-            html.AppendLine("</tr>");
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(30);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(x => x.FontSize(10));
+
+                // HEADER: titulo y fecha de generacion
+                page.Header().Column(headerCol =>
+                {
+                    headerCol.Item().Text("Reporte de Programas Academicos")
+                        .FontSize(18).Bold().AlignCenter();
+                    headerCol.Item().PaddingTop(4)
+                        .Text($"Generado el: {generatedAt:dd/MM/yyyy HH:mm}")
+                        .FontSize(9).AlignCenter()
+                        .FontColor(Colors.Grey.Darken1);
+                });
+
+                // CONTENT: tabla zebra o mensaje vacio
+                page.Content().PaddingVertical(15).Column(col =>
+                {
+                    if (programs.Count == 0)
+                    {
+                        col.Item().PaddingTop(40).AlignCenter()
+                            .Text("No hay programas registrados.")
+                            .FontSize(12).Italic().FontColor(Colors.Grey.Darken2);
+                        return;
+                    }
+
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.RelativeColumn(1.5f);
+                            cols.RelativeColumn(4);
+                            cols.RelativeColumn(1.5f);
+                            cols.RelativeColumn(1);
+                            cols.RelativeColumn(1.5f);
+                        });
+
+                        // Header de la tabla con fondo azul oscuro y texto blanco
+                        table.Header(header =>
+                        {
+                            header.Cell().Background(Colors.Blue.Darken2).Padding(5)
+                                .Text("Codigo").FontColor(Colors.White).Bold();
+                            header.Cell().Background(Colors.Blue.Darken2).Padding(5)
+                                .Text("Nombre").FontColor(Colors.White).Bold();
+                            header.Cell().Background(Colors.Blue.Darken2).Padding(5)
+                                .Text("Jornada").FontColor(Colors.White).Bold();
+                            header.Cell().Background(Colors.Blue.Darken2).Padding(5)
+                                .Text("Semestres").FontColor(Colors.White).Bold();
+                            header.Cell().Background(Colors.Blue.Darken2).Padding(5)
+                                .Text("Estado").FontColor(Colors.White).Bold();
+                        });
+
+                        // Filas con zebra (alternando blanco y gris claro)
+                        int rowIndex = 0;
+                        foreach (var p in programs)
+                        {
+                            var bgColor = rowIndex % 2 == 0
+                                ? Colors.White
+                                : Colors.Grey.Lighten4;
+
+                            table.Cell().Background(bgColor).Padding(5).Text(p.Code);
+                            table.Cell().Background(bgColor).Padding(5).Text(p.Name);
+                            table.Cell().Background(bgColor).Padding(5).Text(p.Shift);
+                            table.Cell().Background(bgColor).Padding(5)
+                                .AlignCenter().Text(p.TotalSemesters.ToString());
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(p.IsActive ? "Activa" : "Inactiva");
+                            rowIndex++;
+                        }
+                    });
+                });
+
+                // FOOTER: paginacion "Pagina X de Y"
+                page.Footer().AlignCenter().Text(text =>
+                {
+                    text.DefaultTextStyle(x => x.FontSize(9).FontColor(Colors.Grey.Darken1));
+                    text.Span("Pagina ");
+                    text.CurrentPageNumber();
+                    text.Span(" de ");
+                    text.TotalPages();
+                });
+            });
+        });
+
+        var pdfBytes = document.GeneratePdf();
+
+        return File(pdfBytes,
+            "application/pdf",
+            $"programas_academicos_{generatedAt:yyyyMMdd_HHmm}.pdf");
+    }
+
+    // Inicializa la licencia community de QuestPDF una sola vez por proceso.
+    // Es thread-safe con un lock para evitar carrera en arranque concurrente.
+    private static void EnsureQuestPdfLicense()
+    {
+        if (_questPdfInitialized) return;
+        lock (_questPdfLock)
+        {
+            if (_questPdfInitialized) return;
+            QuestPDF.Settings.License = LicenseType.Community;
+            _questPdfInitialized = true;
         }
-
-        html.AppendLine("</tbody></table></body></html>");
-
-        var htmlBytes = Encoding.UTF8.GetBytes(html.ToString());
-
-        return File(htmlBytes, "text/html", "reporte_programas_academicos.html");
     }
 
     // Exporta el listado de programas no eliminados en Excel.
