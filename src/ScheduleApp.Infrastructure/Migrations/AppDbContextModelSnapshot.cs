@@ -292,6 +292,9 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsTapsi")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
