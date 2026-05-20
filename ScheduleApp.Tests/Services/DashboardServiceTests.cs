@@ -52,5 +52,66 @@ namespace ScheduleApp.Tests.Services
             result.Classrooms.Should().BeGreaterThanOrEqualTo(0);
             result.Coordinators.Should().BeGreaterThanOrEqualTo(0);
         }
+        [Fact]
+        public void GetSummary_DeberiaRetornarCantidadesCorrectas()
+        {
+            // Act
+            var result = _service.GetSummary();
+
+            // Assert
+            result.Subjects.Should().Be(5);
+            result.Teachers.Should().Be(3);
+            result.Schedules.Should().Be(7);
+            result.Programs.Should().Be(2);
+            result.Classrooms.Should().Be(4);
+            result.Coordinators.Should().Be(1);
+        }
+
+        [Fact]
+        public void GetSummary_DeberiaRetornarCerosCuandoNoHayRegistros()
+        {
+            // Arrange
+            _repoMock.Setup(r => r.GetSummary()).Returns(new DashboardSummaryDto
+            {
+                Subjects = 0,
+                Teachers = 0,
+                Schedules = 0,
+                Programs = 0,
+                Classrooms = 0,
+                Coordinators = 0
+            });
+
+            var service = new DashboardService(_repoMock.Object);
+
+            // Act
+            var result = service.GetSummary();
+
+            // Assert
+            result.Subjects.Should().Be(0);
+            result.Teachers.Should().Be(0);
+            result.Schedules.Should().Be(0);
+            result.Programs.Should().Be(0);
+            result.Classrooms.Should().Be(0);
+            result.Coordinators.Should().Be(0);
+        }
+
+        [Fact]
+        public void GetSummary_DeberiaControlarErrores()
+        {
+            // Arrange
+            _repoMock.Setup(r => r.GetSummary())
+                .Throws(new Exception("Database error"));
+
+            var service = new DashboardService(_repoMock.Object);
+
+            // Act
+            Action act = () => service.GetSummary();
+
+            // Assert
+            act.Should().Throw<Exception>()
+                .WithMessage("Database error");
+        }
+
+
     }
 }
