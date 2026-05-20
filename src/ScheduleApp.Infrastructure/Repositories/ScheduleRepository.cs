@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.4 - HU-74 fallback docente para materias sin TeacherSubject
+// Version: 0.5 - fix jornada: la generacion respeta la franja nocturna
 
 using System;
 using System.Collections.Generic;
@@ -21,8 +21,6 @@ public class ScheduleRepository : IScheduleRepository
     private readonly AppDbContext _context;
 
     private static readonly TimeSpan ClassDuration = new TimeSpan(1, 0, 0);
-    private static readonly TimeSpan DayStart = new TimeSpan(7, 0, 0);
-    private static readonly TimeSpan DayEnd = new TimeSpan(12, 0, 0);
     private const int FirstDay = 1;
     private const int LastDay = 5;
 
@@ -109,6 +107,11 @@ public class ScheduleRepository : IScheduleRepository
 
         var generatedSchedules = new List<GeneratedScheduleEntryDto>();
 
+        // Ventana horaria segun la jornada (debe coincidir con la vista de Horarios del frontend)
+        var (dayStart, dayEnd) = shift.Equals("Nocturna", StringComparison.OrdinalIgnoreCase)
+            ? (new TimeSpan(18, 30, 0), new TimeSpan(22, 30, 0))
+            : (new TimeSpan(7, 0, 0), new TimeSpan(18, 0, 0));
+
         foreach (var subject in subjects)
         {
             var teacherSubject = teacherSubjects
@@ -124,8 +127,8 @@ public class ScheduleRepository : IScheduleRepository
 
             for (int day = FirstDay; day <= LastDay && !assigned; day++)
             {
-                for (var slotStart = DayStart;
-                     slotStart < DayEnd && !assigned;
+                for (var slotStart = dayStart;
+                     slotStart < dayEnd && !assigned;
                      slotStart = slotStart.Add(ClassDuration))
                 {
                     var slotEnd = slotStart.Add(ClassDuration);
