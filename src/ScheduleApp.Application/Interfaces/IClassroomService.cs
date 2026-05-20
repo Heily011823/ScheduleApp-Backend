@@ -13,7 +13,7 @@ namespace ScheduleApp.Application.Interfaces;
 public interface IClassroomService
 {
     /// <summary>Obtiene todas las aulas registradas en el sistema.</summary>
-    Task<List<Classroom>> GetClassroomsAsync();
+    Task<List<Classroom>> GetClassroomsAsync(string? name = null, string? code = null, string? building = null);
 
     /// <summary>Busca un aula específica mediante su identificador Guid.</summary>
     Task<Classroom?> GetClassroomByIdAsync(Guid id);

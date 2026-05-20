@@ -28,15 +28,21 @@ public class ClassroomsController : ControllerBase
         _availabilityService = availabilityService;
     }
 
+
+    // src/ScheduleApp.WebApi/Controllers/ClassroomsController.cs
+    // Reemplazar el método GetAll() (líneas 34-46) con:
     /// <summary>
-    /// Obtiene la lista completa de aulas registradas.
+    /// Obtiene la lista de aulas registradas, opcionalmente filtrada por nombre, código o edificio.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        string? name = null,
+        string? code = null,
+        string? building = null)
     {
         try
         {
-            var classrooms = await _classroomService.GetClassroomsAsync();
+            var classrooms = await _classroomService.GetClassroomsAsync(name, code, building);
             return Ok(classrooms);
         }
         catch (Exception ex)
@@ -44,6 +50,30 @@ public class ClassroomsController : ControllerBase
             return StatusCode(500, new { message = "Error al consultar aulas.", detail = ex.Message });
         }
     }
+
+
+    /// <summary>
+    /// Obtiene un aula específica por su identificador único.
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        try
+        {
+            var classroom = await _classroomService.GetClassroomByIdAsync(id);
+            if (classroom is null)
+            {
+                return NotFound(new { message = $"No se encontró un aula con el ID '{id}'." });
+            }
+            return Ok(classroom);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error al consultar el aula.", detail = ex.Message });
+        }
+    }
+
+
 
     /// <summary>
     /// Crea un aula nueva.

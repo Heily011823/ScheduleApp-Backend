@@ -77,4 +77,24 @@ public class ClassroomService : IClassroomService
         await _classroomRepository.UpdateAsync(classroom);
         return classroom;
     }
+
+    public async Task<List<Classroom>> GetClassroomsAsync(string? name = null, string? code = null, string? building = null)
+    {
+        var classrooms = await _classroomRepository.GetAllAsync();
+
+        // Aplicar filtros si se proporcionan (búsqueda insensible a mayúsculas/minúsculas)
+        if (!string.IsNullOrWhiteSpace(name))
+            classrooms = classrooms.Where(c =>
+                c.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (!string.IsNullOrWhiteSpace(code))
+            classrooms = classrooms.Where(c =>
+                c.Code.Contains(code, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (!string.IsNullOrWhiteSpace(building))
+            classrooms = classrooms.Where(c =>
+                c.Building.Contains(building, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        return classrooms;
+    }
 }
