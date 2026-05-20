@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ScheduleApp.Application.Interfaces;
@@ -9,9 +8,6 @@ using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
 using System;
 using System.Text;
-
-// Cargar variables de entorno utilizando DotNetEnv
-Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
