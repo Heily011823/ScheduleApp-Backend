@@ -1,13 +1,9 @@
-﻿// Autor: Jacobo
-// Version: 0.1
-
-using ScheduleApp.Application.DTOs;
+﻿using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
-using ScheduleApp.Application.Services;
 
 namespace ScheduleApp.Application.Services
 {
-    public class ScheduleGenerationService : IScheduleGenerationService
+    public class ScheduleGenerationService : IScheduleGenerationService, IScheduleService
     {
         private readonly IScheduleRepository _scheduleRepository;
 
@@ -16,8 +12,10 @@ namespace ScheduleApp.Application.Services
             _scheduleRepository = scheduleRepository;
         }
 
-        public async Task<GenerateScheduleResponseDto> GenerateAsync(
-            GenerateScheduleRequestDto request)
+        // ============================================================
+        // GENERACIÓN AUTOMÁTICA DE HORARIO
+        // ============================================================
+        public async Task<GenerateScheduleResponseDto> GenerateAsync(GenerateScheduleRequestDto request)
         {
             var response = new GenerateScheduleResponseDto();
 
@@ -42,11 +40,7 @@ namespace ScheduleApp.Application.Services
                 return response;
             }
 
-            bool programExists =
-                await _scheduleRepository.AcademicProgramExistsAsync(
-                    request.AcademicProgramId
-                );
-
+            bool programExists = await _scheduleRepository.AcademicProgramExistsAsync(request.AcademicProgramId);
             if (!programExists)
             {
                 response.Success = false;
@@ -54,12 +48,11 @@ namespace ScheduleApp.Application.Services
                 return response;
             }
 
-            var generatedSchedules =
-                await _scheduleRepository.GetSubjectsForGenerationAsync(
-                    request.AcademicProgramId,
-                    request.SemesterNumber,
-                    request.Shift
-                );
+            var generatedSchedules = await _scheduleRepository.GetSubjectsForGenerationAsync(
+                request.AcademicProgramId,
+                request.SemesterNumber,
+                request.Shift
+            );
 
             response.TotalSubjectsRequested = generatedSchedules.Count;
             response.TotalSubjectsScheduled = generatedSchedules.Count;
@@ -68,20 +61,32 @@ namespace ScheduleApp.Application.Services
             if (generatedSchedules.Count == 0)
             {
                 response.Success = false;
-                response.Message =
-                    "No se encontraron materias activas para generar el horario con los filtros seleccionados.";
-
-                response.Warnings.Add(
-                    "Verifique que existan materias activas para el semestre seleccionado."
-                );
-
+                response.Message = "No se encontraron materias activas para generar el horario con los filtros seleccionados.";
+                response.Warnings.Add("Verifique que existan materias activas para el semestre seleccionado.");
                 return response;
             }
 
             response.Success = true;
             response.Message = "Horario generado correctamente.";
-
             return response;
+        }
+
+        // ============================================================
+        // GUARDAR HORARIOS EN LA BASE DE DATOS
+        // ============================================================
+        public async Task SaveAsync(SaveScheduleRequestDto request)
+        {
+           
+            var schedulesToSave = request.Schedules;
+            await _scheduleRepository.SaveAsync(schedulesToSave);
+        }
+
+        // ============================================================
+        // OBTENER HORARIOS FILTRADOS
+        // ============================================================
+        public async Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(string academicProgram, string shift, int semester)
+        {
+            return await _scheduleRepository.GetByFiltersAsync(academicProgram, shift, semester);
         }
     }
 }
