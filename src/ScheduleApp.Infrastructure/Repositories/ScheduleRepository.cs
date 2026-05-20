@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.5 - fix jornada: la generacion respeta la franja nocturna
+// Version: 0.6 - fix: una sola clase por franja en cada semestre
 
 using System;
 using System.Collections.Generic;
@@ -97,8 +97,6 @@ public class ScheduleRepository : IScheduleRepository
 
         // HU-74 fix: si una materia no tiene docente asignado en TeacherSubjects,
         // usamos un docente activo cualquiera como fallback.
-        // Esto evita que se omitan materias cuando la tabla TeacherSubjects
-        // todavia no esta poblada (caso comun en datos iniciales del proyecto).
         var fallbackTeachers = await _context.Teachers
             .Where(t => t.IsActive)
             .ToListAsync();
@@ -132,6 +130,16 @@ public class ScheduleRepository : IScheduleRepository
                      slotStart = slotStart.Add(ClassDuration))
                 {
                     var slotEnd = slotStart.Add(ClassDuration);
+
+                    // Un semestre no puede tener dos clases en la misma franja:
+                    // si ya hay una clase generada en este dia/hora, probamos la siguiente.
+                    bool slotOcupado = generatedSchedules.Any(s =>
+                        s.Day == day &&
+                        s.StartTime < slotEnd &&
+                        s.EndTime > slotStart);
+
+                    if (slotOcupado)
+                        continue;
 
                     foreach (var classroom in classrooms)
                     {
