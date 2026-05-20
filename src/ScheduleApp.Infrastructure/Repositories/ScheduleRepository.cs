@@ -1,5 +1,5 @@
-// Autor: Jacobo
-// Version: 0.3 - Generación, guardado y consulta de horarios
+﻿// Autor: Jacobo
+// Version: 0.4 - HU-74 fallback docente para materias sin TeacherSubject
 
 using System;
 using System.Collections.Generic;
@@ -13,12 +13,9 @@ using ScheduleApp.Infrastructure.Data;
 
 namespace ScheduleApp.Infrastructure.Repositories;
 
-/// <summary>
-/// Repositorio para gestión de horarios.
-/// </summary>
-/// Autor: Mateo Quintero
-/// Version: 0.1
-/// Rama: 143-validar-creditos-scheduleApp
+// Repositorio para gestion de horarios.
+// Incluye generacion automatica (HU-74), guardado (HU-71), consulta filtrada
+// y los metodos auxiliares para la validacion de creditos (HU-143).
 public class ScheduleRepository : IScheduleRepository
 {
     private readonly AppDbContext _context;
@@ -29,16 +26,12 @@ public class ScheduleRepository : IScheduleRepository
     private const int FirstDay = 1;
     private const int LastDay = 5;
 
-    // Constructor único
     public ScheduleRepository(AppDbContext context)
     {
         _context = context;
     }
 
-    /// <summary>
-    /// Retorna todos los horarios de un programa y semestre.
-    /// Incluye la materia para acceder a sus créditos.
-    /// </summary>
+    // HU-143 (Mateo Quintero): retorna horarios de un programa y semestre con la materia incluida
     public async Task<IEnumerable<Schedule>> GetByProgramAndSemesterAsync(
         string academicProgram,
         int semester)
@@ -52,7 +45,7 @@ public class ScheduleRepository : IScheduleRepository
             .ToListAsync();
     }
 
-    /// <summary>Guarda un nuevo horario en BD.</summary>
+    // HU-143 (Mateo Quintero): crea un horario individual
     public async Task<Schedule> CreateAsync(Schedule schedule)
     {
         schedule.Id = Guid.NewGuid();
@@ -104,6 +97,14 @@ public class ScheduleRepository : IScheduleRepository
                 ts.Subject.IsActive)
             .ToListAsync();
 
+        // HU-74 fix: si una materia no tiene docente asignado en TeacherSubjects,
+        // usamos un docente activo cualquiera como fallback.
+        // Esto evita que se omitan materias cuando la tabla TeacherSubjects
+        // todavia no esta poblada (caso comun en datos iniciales del proyecto).
+        var fallbackTeachers = await _context.Teachers
+            .Where(t => t.IsActive)
+            .ToListAsync();
+
         var existingSchedules = await _context.Schedules.ToListAsync();
 
         var generatedSchedules = new List<GeneratedScheduleEntryDto>();
@@ -113,10 +114,12 @@ public class ScheduleRepository : IScheduleRepository
             var teacherSubject = teacherSubjects
                 .FirstOrDefault(ts => ts.SubjectId == subject.Id);
 
-            if (teacherSubject == null)
+            // Preferir el docente asignado oficialmente; si no hay, usar fallback.
+            var teacher = teacherSubject?.Teacher ?? fallbackTeachers.FirstOrDefault();
+
+            if (teacher == null)
                 continue;
 
-            var teacher = teacherSubject.Teacher;
             bool assigned = false;
 
             for (int day = FirstDay; day <= LastDay && !assigned; day++)
@@ -132,7 +135,7 @@ public class ScheduleRepository : IScheduleRepository
                         if (IsTeacherBusy(
                                 existingSchedules,
                                 generatedSchedules,
-                                teacher!.Id,
+                                teacher.Id,
                                 day,
                                 slotStart,
                                 slotEnd))
