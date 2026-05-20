@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.Services;
 
 namespace ScheduleApp.WebApi.Controllers
@@ -17,9 +16,9 @@ namespace ScheduleApp.WebApi.Controllers
         /// <summary>
         /// Dashboard controller constructor.
         /// </summary>
-        public DashboardController()
+        public DashboardController(DashboardService dashboardService)
         {
-            _dashboardService = new DashboardService();
+            _dashboardService = dashboardService;
         }
 
         /// <summary>

@@ -11,9 +11,18 @@ public interface ISubjectService
 
     Task UpdateSubjectAsync(Guid id, UpdateSubjectDto dto);
 
-    Task<List<Subject>> SearchSubjectsAsync(
-    string? search,
-    int? semester,
-    bool? isActive
+    // Detalle de materia por Id (HU-120). Retorna null si no existe.
+    Task<Subject?> GetSubjectByIdAsync(Guid id);
+
+    // MODIFICADO: Cambiamos el tipo de retorno al DTO de Jacobo
+    // y agregamos los parámetros numéricos obligatorios para la paginación.
+    Task<PagedResultDto<Subject>> SearchSubjectsAsync(
+        string? search,
+        int? semester,
+        bool? isActive,
+        int page,
+        int pageSize
     );
+    Task<byte[]> ExportSubjectsToExcelAsync();
+    Task<byte[]> ExportSubjectsToPdfAsync();
 }

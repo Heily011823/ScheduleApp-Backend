@@ -1,23 +1,20 @@
 ﻿using ScheduleApp.Application.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using ScheduleApp.Application.Interfaces;
 
 namespace ScheduleApp.Application.Services
 {
     public class DashboardService
     {
+        private readonly IDashboardRepository _dashboardRepository;
+
+        public DashboardService(IDashboardRepository dashboardRepository)
+        {
+            _dashboardRepository = dashboardRepository;
+        }
+
         public DashboardSummaryDto GetSummary()
         {
-            return new DashboardSummaryDto
-            {
-                Subjects = 12,
-                Teachers = 8,
-                Schedules = 20,
-                Programs = 5,
-                Classrooms = 15,
-                Coordinators = 2
-            };
+            return _dashboardRepository.GetSummary();
         }
     }
 }

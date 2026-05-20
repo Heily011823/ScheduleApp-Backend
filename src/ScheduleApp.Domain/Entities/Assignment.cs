@@ -12,7 +12,7 @@ namespace ScheduleApp.Domain.Entities
 
         public string Classroom { get; set; } = string.Empty;
 
-        public DayOfWeek Day { get; set; }
+        public int Day { get; set; }
 
         public TimeSpan StartTime { get; set; }
 

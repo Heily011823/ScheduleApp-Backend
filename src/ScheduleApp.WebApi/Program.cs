@@ -1,6 +1,4 @@
-﻿// ScheduleApp.WebApi/Program.cs
-
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ScheduleApp.Application.Interfaces;
@@ -8,6 +6,7 @@ using ScheduleApp.Application.Services;
 using ScheduleApp.Infrastructure.Data;
 using ScheduleApp.Infrastructure.Repositories;
 using ScheduleApp.Infrastructure.Services;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,25 +17,50 @@ var jwtSecret = builder.Configuration["Jwt:Secret"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-// Validaciones (Mantenemos la seguridad original)
+// Validaciones de seguridad
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta la cadena de conexion 'DefaultConnection' en el appsettings."
+    );
+}
+
 if (string.IsNullOrWhiteSpace(jwtSecret))
-    throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta la variable 'Jwt:Secret' en el appsettings."
+    );
+}
+
 if (string.IsNullOrWhiteSpace(jwtIssuer))
-    throw new InvalidOperationException("Falta la variable 'Jwt:Issuer' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta la variable 'Jwt:Issuer' en el appsettings."
+    );
+}
+
 if (string.IsNullOrWhiteSpace(jwtAudience))
-    throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta la variable 'Jwt:Audience' en el appsettings."
+    );
+}
 
-// Database
+// =========================================================================
+// REGISTRO DE SERVICIOS
+// =========================================================================
+
+// Base de datos
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString)
+);
 
-// Controllers
+// Controladores
 builder.Services.AddControllers();
 
 // Swagger
-//builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
@@ -46,50 +70,108 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// TAPSI rules
+// =========================================================================
+// MÓDULO DE AULAS
+// =========================================================================
+
+builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
+builder.Services.AddScoped<IClassroomService, ClassroomService>();
+builder.Services.AddScoped<IClassroomAvailabilityService, AvailabilityService>();
+
+// =========================================================================
+// MÓDULO DE PROGRAMAS / SEMESTRES
+// =========================================================================
+
+builder.Services.AddScoped<IProgramSemesterRepository, ProgramSemesterRepository>();
+builder.Services.AddScoped<ProgramSemesterService>();
+
+// =========================================================================
+// MÓDULO DE DOCENTES
+// =========================================================================
+
+builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
+builder.Services.AddScoped<ITeacherService, TeacherService>();
+
+// =========================================================================
+// REGLAS TAPSI
+// =========================================================================
+
 builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
 builder.Services.AddScoped<TapsiService>();
 
-// Authentication
+// =========================================================================
+// MÓDULO DE USUARIOS Y AUTENTICACIÓN
+// =========================================================================
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddScoped<IJwtService>(
+    provider => new JwtService(jwtSecret, jwtIssuer, jwtAudience)
+);
+
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
+builder.Services.AddScoped<AuthService>();
+
+// =========================================================================
+// MÓDULO DE MATERIAS Y ASIGNACIONES
+// =========================================================================
+
+builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
+builder.Services.AddScoped<ISubjectService, SubjectService>();
+
+builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+builder.Services.AddScoped<IAssignmentService, AssignmentService>();
+
+// =========================================================================
+// MÓDULO DE HORARIOS
+// =========================================================================
+
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<IScheduleGenerationService, ScheduleGenerationService>();
+
+builder.Services.AddScoped<
+    IScheduleGenerationService,
+    ScheduleApp.Application.Services.ScheduleGenerationService
+>();
+
+// =========================================================================
+// DASHBOARD
+// =========================================================================
+
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<DashboardService>();
+
+// =========================================================================
+// AUTENTICACIÓN JWT
+// =========================================================================
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
+
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSecret)),
+                Encoding.UTF8.GetBytes(jwtSecret)
+            ),
+
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
+
             ValidateAudience = true,
             ValidAudience = jwtAudience,
+
             ClockSkew = TimeSpan.Zero
         };
     });
 
-// Dependency injection
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
-
-// SOLUCIÓN AQUÍ: Instanciamos JwtService pasando las variables validadas al constructor
-builder.Services.AddScoped<IJwtService>(provider =>
-    new JwtService(jwtSecret, jwtIssuer, jwtAudience));
-
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
-builder.Services.AddScoped<ISubjectService, SubjectService>();
-builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
-builder.Services.AddScoped<IAssignmentService, AssignmentService>();
-
 var app = builder.Build();
 
-// Automatic migrations
-//using (var scope = app.Services.CreateScope())
-//{
-  //  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //db.Database.Migrate();
-//}
+// =========================================================================
+// PIPELINE HTTP
+// =========================================================================
 
 app.UseSwagger();
 
@@ -101,5 +183,7 @@ app.UseSwaggerUI(options =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();

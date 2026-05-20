@@ -11,4 +11,6 @@ public class UpdateSubjectDto
     public int Credits { get; set; }
 
     public int WeeklyHours { get; set; }
+
+    public bool IsActive { get; set; } = true; 
 }

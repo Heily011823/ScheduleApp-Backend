@@ -20,7 +20,8 @@ namespace ScheduleApp.Application.Services
                 dto.Subject,
                 dto.Classroom,
                 dto.StartTime,
-                dto.EndTime);
+                dto.EndTime
+            );
 
             var assignment = new Assignment
             {
@@ -32,6 +33,28 @@ namespace ScheduleApp.Application.Services
                 EndTime = dto.EndTime
             };
 
+            var classroomConflict = await _assignmentRepository
+                .HasClassroomScheduleConflict(
+                    assignment.Classroom,
+                    (int)assignment.Day,
+                    assignment.StartTime,
+                    assignment.EndTime
+                );
+
+            if (classroomConflict)
+                throw new Exception("The classroom is already occupied at this time");
+
+            var teacherConflict = await _assignmentRepository
+                .HasTeacherScheduleConflict(
+                    assignment.Teacher,
+                    (int)assignment.Day,
+                    assignment.StartTime,
+                    assignment.EndTime
+                );
+
+            if (teacherConflict)
+                throw new Exception("The teacher already has an assigned class in this time range.");
+
             await _assignmentRepository.CreateAsync(assignment);
 
             return MapToResponse(assignment);
@@ -40,18 +63,27 @@ namespace ScheduleApp.Application.Services
         public async Task<List<AssignmentResponseDto>> GetAssignmentsAsync()
         {
             var assignments = await _assignmentRepository.GetAllAsync();
-            return assignments.Select(MapToResponse).ToList();
+
+            return assignments
+                .Select(MapToResponse)
+                .ToList();
         }
 
         public async Task<AssignmentResponseDto?> GetAssignmentByIdAsync(int id)
         {
             var assignment = await _assignmentRepository.GetByIdAsync(id);
-            return assignment is null ? null : MapToResponse(assignment);
+
+            return assignment is null
+                ? null
+                : MapToResponse(assignment);
         }
 
-        public async Task<AssignmentResponseDto?> UpdateAssignmentAsync(int id, UpdateAssignmentDto dto)
+        public async Task<AssignmentResponseDto?> UpdateAssignmentAsync(
+            int id,
+            UpdateAssignmentDto dto)
         {
             var existing = await _assignmentRepository.GetByIdAsync(id);
+
             if (existing is null)
                 return null;
 
@@ -60,7 +92,32 @@ namespace ScheduleApp.Application.Services
                 dto.Subject,
                 dto.Classroom,
                 dto.StartTime,
-                dto.EndTime);
+                dto.EndTime
+            );
+
+            var classroomConflict = await _assignmentRepository
+                .HasClassroomScheduleConflictExcluding(
+                    dto.Classroom,
+                    (int)dto.Day,
+                    dto.StartTime,
+                    dto.EndTime,
+                    id
+                );
+
+            if (classroomConflict)
+                throw new Exception("The classroom is already occupied at this time");
+
+            var teacherConflict = await _assignmentRepository
+                .HasTeacherScheduleConflictExcluding(
+                    dto.Teacher,
+                    (int)dto.Day,
+                    dto.StartTime,
+                    dto.EndTime,
+                    id
+                );
+
+            if (teacherConflict)
+                throw new Exception("The teacher already has an assigned class in this time range.");
 
             existing.Teacher = dto.Teacher;
             existing.Subject = dto.Subject;
@@ -79,8 +136,6 @@ namespace ScheduleApp.Application.Services
             return await _assignmentRepository.DeleteAsync(id);
         }
 
-        // Valida los campos obligatorios y el rango horario.
-        // Lanza Exception cuando algun dato es invalido.
         private static void ValidateAssignmentData(
             string teacher,
             string subject,
@@ -101,7 +156,6 @@ namespace ScheduleApp.Application.Services
                 throw new Exception("Start time must be earlier than end time");
         }
 
-        // Convierte la entidad de dominio en su DTO de respuesta.
         private static AssignmentResponseDto MapToResponse(Assignment assignment)
         {
             return new AssignmentResponseDto
@@ -110,7 +164,7 @@ namespace ScheduleApp.Application.Services
                 Teacher = assignment.Teacher,
                 Subject = assignment.Subject,
                 Classroom = assignment.Classroom,
-                Day = assignment.Day,
+                Day = (int)assignment.Day,
                 StartTime = assignment.StartTime,
                 EndTime = assignment.EndTime
             };

@@ -15,20 +15,45 @@ public class SubjectController : ControllerBase
         _subjectService = subjectService;
     }
 
+    // Detalle de materia por Id (HU-120).
+    // Retorna 200 con la materia o 404 si no existe.
+    // Autor: Jacobo
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetSubjectById(Guid id)
+    {
+        var subject = await _subjectService.GetSubjectByIdAsync(id);
+
+        if (subject is null)
+        {
+            return NotFound(new
+            {
+                message = $"No se encontro la materia con Id '{id}'."
+            });
+        }
+
+        return Ok(subject);
+    }
+
+    // MODIFICADO: Ahora el endpoint recibe 'page' y 'pageSize' desde el Query String.
+    // Se configuran valores por defecto (Página 1, 10 registros por página) si no se envían.
     [HttpGet("search")]
     public async Task<IActionResult> SearchSubjects(
-    [FromQuery] string? search,
-    [FromQuery] int? semester,
-    [FromQuery] bool? isActive)
+        [FromQuery] string? search,
+        [FromQuery] int? semester,
+        [FromQuery] bool? isActive,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         try
         {
-            var subjects = await _subjectService.SearchSubjectsAsync(
+            var pagedResult = await _subjectService.SearchSubjectsAsync(
                 search,
                 semester,
-                isActive);
+                isActive,
+                page,
+                pageSize);
 
-            return Ok(subjects);
+            return Ok(pagedResult);
         }
         catch (Exception ex)
         {
@@ -42,7 +67,7 @@ public class SubjectController : ControllerBase
         try
         {
             await _subjectService.DeleteSubjectAsync(id);
-            return Ok("Subject deleted successfully");
+            return Ok("Materia eliminada exitosamente");
         }
         catch (Exception ex)
         {
@@ -56,7 +81,7 @@ public class SubjectController : ControllerBase
         try
         {
             await _subjectService.CreateSubjectAsync(dto);
-            return Ok("Subject created successfully");
+            return Ok("Materia creada exitosamente");
         }
         catch (Exception ex)
         {
@@ -70,11 +95,35 @@ public class SubjectController : ControllerBase
         try
         {
             await _subjectService.UpdateSubjectAsync(id, dto);
-            return Ok("Subject updated successfully");
+            return Ok("Materia actualizada exitosamente");
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
+    }
+
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportSubjectsToExcel()
+    {
+        var file = await _subjectService.ExportSubjectsToExcelAsync();
+
+        return File(
+            file,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "materias.xlsx"
+        );
+    }
+
+    [HttpGet("export/pdf")]
+    public async Task<IActionResult> ExportSubjectsToPdf()
+    {
+        var file = await _subjectService.ExportSubjectsToPdfAsync();
+
+        return File(
+            file,
+            "text/html",
+            "materias.html"
+        );
     }
 }
