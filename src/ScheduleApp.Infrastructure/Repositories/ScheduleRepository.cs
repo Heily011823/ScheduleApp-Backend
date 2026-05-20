@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.2 - HU-74 validacion de cruces de docentes y aulas
+// Version: 0.3 - Generación, guardado y consulta de horarios
 
 using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Application.DTOs;
@@ -9,30 +9,15 @@ using ScheduleApp.Infrastructure.Data;
 
 namespace ScheduleApp.Infrastructure.Repositories
 {
-    // Repositorio del modulo de generacion de horarios.
-    //
-    // Mejoras de HU-74:
-    //   - Antes de asignar una materia se valida que el docente no este ocupado
-    //     en ese slot (en BD o en lo que ya se genero en esta corrida).
-    //   - Tambien se valida que el aula no este ocupada en ese slot.
-    //   - Si el slot esta ocupado, el algoritmo prueba la siguiente combinacion
-    //     (otro horario u otra aula) hasta encontrar uno libre.
-    //   - Si no encuentra slot libre para la materia, se omite (no se agrega al
-    //     resultado). El service que llama a este repo puede registrar warnings.
-    //
-    // Solapamiento de intervalos (formula clasica):
-    //   Dos rangos [a.start, a.end] y [b.start, b.end] se solapan si
-    //   a.StartTime < b.EndTime AND a.EndTime > b.StartTime.
     public class ScheduleRepository : IScheduleRepository
     {
         private readonly AppDbContext _context;
 
-        // Configuracion del algoritmo greedy
         private static readonly TimeSpan ClassDuration = new TimeSpan(1, 0, 0);
         private static readonly TimeSpan DayStart = new TimeSpan(7, 0, 0);
         private static readonly TimeSpan DayEnd = new TimeSpan(12, 0, 0);
-        private const int FirstDay = 1; // Lunes
-        private const int LastDay = 5;  // Viernes
+        private const int FirstDay = 1;
+        private const int LastDay = 5;
 
         public ScheduleRepository(AppDbContext context)
         {
@@ -81,14 +66,10 @@ namespace ScheduleApp.Infrastructure.Repositories
                     ts.Subject.IsActive)
                 .ToListAsync();
 
-            // Cargar Schedules existentes en BD. Son la base para validar
-            // que un docente o aula ya este ocupado en algun slot.
             var existingSchedules = await _context.Schedules.ToListAsync();
 
             var generatedSchedules = new List<GeneratedScheduleEntryDto>();
 
-            // Para cada materia, buscar la primera combinacion (dia + hora + aula)
-            // que este libre tanto para el docente como para el aula.
             foreach (var subject in subjects)
             {
                 var teacherSubject = teacherSubjects
@@ -100,7 +81,6 @@ namespace ScheduleApp.Infrastructure.Repositories
                 var teacher = teacherSubject.Teacher;
                 bool assigned = false;
 
-                // Probar slots: dia 1..5 (lunes a viernes), hora 7..11
                 for (int day = FirstDay; day <= LastDay && !assigned; day++)
                 {
                     for (var slotStart = DayStart;
@@ -109,28 +89,30 @@ namespace ScheduleApp.Infrastructure.Repositories
                     {
                         var slotEnd = slotStart.Add(ClassDuration);
 
-                        // Probar cada aula en este slot
                         foreach (var classroom in classrooms)
                         {
                             if (IsTeacherBusy(
-                                    existingSchedules, generatedSchedules,
-                                    teacher.Id, day, slotStart, slotEnd))
+                                    existingSchedules,
+                                    generatedSchedules,
+                                    teacher.Id,
+                                    day,
+                                    slotStart,
+                                    slotEnd))
                             {
-                                // El docente ya tiene otra clase en este slot,
-                                // saltar a la siguiente aula (no sirve, el docente
-                                // es el limitante en este horario).
                                 break;
                             }
 
                             if (IsClassroomBusy(
-                                    existingSchedules, generatedSchedules,
-                                    classroom.Id, day, slotStart, slotEnd))
+                                    existingSchedules,
+                                    generatedSchedules,
+                                    classroom.Id,
+                                    day,
+                                    slotStart,
+                                    slotEnd))
                             {
-                                // El aula esta ocupada, probar la siguiente
                                 continue;
                             }
 
-                            // Slot libre, asignar
                             generatedSchedules.Add(new GeneratedScheduleEntryDto
                             {
                                 Id = Guid.NewGuid(),
@@ -164,22 +146,100 @@ namespace ScheduleApp.Infrastructure.Repositories
                         }
                     }
                 }
-
-                // Si !assigned: no se encontro slot libre para esta materia.
-                // No se agrega al resultado. El service deberia registrar un warning
-                // pero por contrato del IScheduleRepository solo retornamos los que
-                // si se pudieron asignar.
             }
 
             return generatedSchedules;
         }
 
-        // ============================================================
-        // VALIDACIONES DE CRUCES (HU-74)
-        // ============================================================
+        public async Task SaveAsync(List<GeneratedScheduleEntryDto> schedules)
+        {
+            if (schedules == null || schedules.Count == 0)
+                return;
 
-        // El docente esta ocupado en (day, start, end) si tiene un Schedule
-        // existente en BD o un Schedule recien generado que solape ese rango.
+            var first = schedules.First();
+
+            var existingSchedules = await _context.Schedules
+                .Where(s =>
+                    s.AcademicProgram == first.AcademicProgram &&
+                    s.Shift == first.Shift &&
+                    s.Semester == first.Semester)
+                .ToListAsync();
+
+            if (existingSchedules.Any())
+            {
+                _context.Schedules.RemoveRange(existingSchedules);
+            }
+
+            var entities = schedules.Select(schedule => new Schedule
+            {
+                Id = schedule.Id == Guid.Empty ? Guid.NewGuid() : schedule.Id,
+
+                SubjectId = schedule.SubjectId,
+                TeacherId = schedule.TeacherId,
+                ClassroomId = schedule.ClassroomId,
+
+                Day = (DayOfWeek)schedule.Day,
+                StartTime = schedule.StartTime,
+                EndTime = schedule.EndTime,
+
+                AcademicProgram = schedule.AcademicProgram,
+                Shift = schedule.Shift,
+                Semester = schedule.Semester,
+                Status = "Saved",
+
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = null
+            }).ToList();
+
+            await _context.Schedules.AddRangeAsync(entities);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
+            string academicProgram,
+            string shift,
+            int semester)
+        {
+            return await _context.Schedules
+                .Include(s => s.Subject)
+                .Include(s => s.Teacher)
+                .Include(s => s.Classroom)
+                .Where(s =>
+                    s.AcademicProgram == academicProgram &&
+                    s.Shift == shift &&
+                    s.Semester == semester)
+                .OrderBy(s => s.Day)
+                .ThenBy(s => s.StartTime)
+                .Select(s => new GeneratedScheduleEntryDto
+                {
+                    Id = s.Id,
+
+                    SubjectId = s.SubjectId,
+                    SubjectCode = s.Subject.Code,
+                    SubjectName = s.Subject.Name,
+                    Credits = s.Subject.Credits,
+                    WeeklyHours = s.Subject.WeeklyHours,
+                    IsTapsi = s.Subject.IsTapsi,
+
+                    TeacherId = s.TeacherId,
+                    TeacherFullName = s.Teacher.FirstName + " " + s.Teacher.LastName,
+
+                    ClassroomId = s.ClassroomId,
+                    ClassroomCode = s.Classroom.Code,
+                    ClassroomName = s.Classroom.Name,
+
+                    Day = (int)s.Day,
+                    StartTime = s.StartTime,
+                    EndTime = s.EndTime,
+
+                    AcademicProgram = s.AcademicProgram,
+                    Shift = s.Shift,
+                    Semester = s.Semester,
+                    Status = s.Status
+                })
+                .ToListAsync();
+        }
+
         private static bool IsTeacherBusy(
             IEnumerable<Schedule> existingSchedules,
             IEnumerable<GeneratedScheduleEntryDto> generatedSchedules,
@@ -191,20 +251,21 @@ namespace ScheduleApp.Infrastructure.Repositories
             bool inExisting = existingSchedules.Any(s =>
                 s.TeacherId == teacherId &&
                 (int)s.Day == day &&
-                s.StartTime < end && s.EndTime > start);
+                s.StartTime < end &&
+                s.EndTime > start);
 
-            if (inExisting) return true;
+            if (inExisting)
+                return true;
 
             bool inGenerated = generatedSchedules.Any(s =>
                 s.TeacherId == teacherId &&
                 s.Day == day &&
-                s.StartTime < end && s.EndTime > start);
+                s.StartTime < end &&
+                s.EndTime > start);
 
             return inGenerated;
         }
 
-        // El aula esta ocupada en (day, start, end) si tiene un Schedule
-        // existente en BD o un Schedule recien generado que solape ese rango.
         private static bool IsClassroomBusy(
             IEnumerable<Schedule> existingSchedules,
             IEnumerable<GeneratedScheduleEntryDto> generatedSchedules,
@@ -216,14 +277,17 @@ namespace ScheduleApp.Infrastructure.Repositories
             bool inExisting = existingSchedules.Any(s =>
                 s.ClassroomId == classroomId &&
                 (int)s.Day == day &&
-                s.StartTime < end && s.EndTime > start);
+                s.StartTime < end &&
+                s.EndTime > start);
 
-            if (inExisting) return true;
+            if (inExisting)
+                return true;
 
             bool inGenerated = generatedSchedules.Any(s =>
                 s.ClassroomId == classroomId &&
                 s.Day == day &&
-                s.StartTime < end && s.EndTime > start);
+                s.StartTime < end &&
+                s.EndTime > start);
 
             return inGenerated;
         }

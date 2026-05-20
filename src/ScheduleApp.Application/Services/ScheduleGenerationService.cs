@@ -3,6 +3,7 @@
 
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
+using ScheduleApp.Application.Services;
 
 namespace ScheduleApp.Application.Services
 {

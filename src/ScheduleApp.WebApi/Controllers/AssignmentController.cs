@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
-using ScheduleApp.Domain.Entities;
 
 namespace ScheduleApp.WebApi.Controllers
 {
@@ -15,13 +15,19 @@ namespace ScheduleApp.WebApi.Controllers
             _assignmentService = assignmentService;
         }
 
+        // Crear un nuevo Assignment
         [HttpPost]
-        public async Task<IActionResult> SaveAssignment([FromBody] Assignment assignment)
+        public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
         {
             try
             {
-                await _assignmentService.SaveAssignmentAsync(assignment);
-                return Ok(new { message = "Assignment saved successfully" });
+                var created = await _assignmentService.CreateAssignmentAsync(dto);
+
+                return CreatedAtAction(
+                    nameof(GetAssignmentById),
+                    new { id = created.Id },
+                    created
+                );
             }
             catch (Exception ex)
             {
@@ -29,6 +35,7 @@ namespace ScheduleApp.WebApi.Controllers
             }
         }
 
+        // Obtener todos los Assignments
         [HttpGet]
         public async Task<IActionResult> GetAssignments()
         {
@@ -36,8 +43,7 @@ namespace ScheduleApp.WebApi.Controllers
             return Ok(assignments);
         }
 
-        // HU-73: detalle de Assignment por Id
-        // Autor: Jacobo
+        // Obtener Assignment por Id
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetAssignmentById(int id)
         {
@@ -49,23 +55,20 @@ namespace ScheduleApp.WebApi.Controllers
             return Ok(assignment);
         }
 
-        // HU-73: actualizar Assignment existente
-        // Autor: Jacobo
+        // Actualizar Assignment existente
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateAssignment(int id, [FromBody] Assignment assignment)
+        public async Task<IActionResult> UpdateAssignment(
+            int id,
+            [FromBody] UpdateAssignmentDto dto)
         {
             try
             {
-                var updated = await _assignmentService.UpdateAssignmentAsync(id, assignment);
+                var updated = await _assignmentService.UpdateAssignmentAsync(id, dto);
 
                 if (updated is null)
                     return NotFound(new { message = $"No se encontro la asignacion con Id '{id}'." });
 
-                return Ok(new
-                {
-                    message = "Assignment updated successfully",
-                    assignment = updated
-                });
+                return Ok(updated);
             }
             catch (Exception ex)
             {
@@ -73,8 +76,7 @@ namespace ScheduleApp.WebApi.Controllers
             }
         }
 
-        // HU-73: eliminar Assignment por Id
-        // Autor: Jacobo
+        // Eliminar Assignment por Id
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteAssignment(int id)
         {

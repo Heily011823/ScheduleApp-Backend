@@ -124,10 +124,11 @@ builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
 // =========================================================================
-// MÓDULO DE GENERACIÓN AUTOMÁTICA DE HORARIOS
+// MÓDULO DE HORARIOS
 // =========================================================================
 
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<IScheduleGenerationService, ScheduleGenerationService>();
 
 builder.Services.AddScoped<
     IScheduleGenerationService,

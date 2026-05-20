@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.1
+// Version: 0.2
 
 using ScheduleApp.Application.DTOs;
 
@@ -13,6 +13,16 @@ namespace ScheduleApp.Application.Interfaces
             Guid academicProgramId,
             int semesterNumber,
             string shift
+        );
+
+        Task SaveAsync(
+            List<GeneratedScheduleEntryDto> schedules
+        );
+
+        Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
+            string academicProgram,
+            string shift,
+            int semester
         );
     }
 }

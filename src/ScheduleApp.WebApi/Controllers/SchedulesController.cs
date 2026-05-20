@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.1
+// Version: 0.2
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,16 +14,16 @@ namespace ScheduleApp.WebApi.Controllers
     public class SchedulesController : ControllerBase
     {
         private readonly IScheduleGenerationService _generationService;
+        private readonly IScheduleService _scheduleService;
 
-        public SchedulesController(IScheduleGenerationService generationService)
+        public SchedulesController(
+            IScheduleGenerationService generationService,
+            IScheduleService scheduleService)
         {
             _generationService = generationService;
+            _scheduleService = scheduleService;
         }
 
-        // Genera automáticamente un horario para el programa, semestre y jornada solicitados.
-        // 200 OK: si pudo asignar al menos una materia.
-        // 422 Unprocessable Entity: si no pudo asignar ninguna materia o el input es inválido.
-        // 400 Bad Request: si el cuerpo de la petición está malformado.
         [HttpPost("generate")]
         public async Task<IActionResult> Generate(
             [FromBody] GenerateScheduleRequestDto request)
@@ -52,6 +52,63 @@ namespace ScheduleApp.WebApi.Controllers
                 return StatusCode(500, new
                 {
                     message = "Error al generar el horario.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("save")]
+        public async Task<IActionResult> Save(
+            [FromBody] SaveScheduleRequestDto request)
+        {
+            try
+            {
+                if (request is null || request.Schedules.Count == 0)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Debe enviar al menos un horario para guardar."
+                    });
+                }
+
+                await _scheduleService.SaveAsync(request);
+
+                return Ok(new
+                {
+                    message = "Horario guardado correctamente."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al guardar el horario.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetByFilters(
+            [FromQuery] string academicProgram,
+            [FromQuery] string shift,
+            [FromQuery] int semester)
+        {
+            try
+            {
+                var result = await _scheduleService.GetByFiltersAsync(
+                    academicProgram,
+                    shift,
+                    semester
+                );
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al consultar los horarios.",
                     detail = ex.Message
                 });
             }

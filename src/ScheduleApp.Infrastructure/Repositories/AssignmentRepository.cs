@@ -2,6 +2,7 @@
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
+
 namespace ScheduleApp.Infrastructure.Repositories
 {
     public class AssignmentRepository : IAssignmentRepository
@@ -14,7 +15,10 @@ namespace ScheduleApp.Infrastructure.Repositories
         }
 
         public async Task<bool> HasTeacherScheduleConflict(
-            string teacher, int day, TimeSpan startTime, TimeSpan endTime)
+            string teacher,
+            int day,
+            TimeSpan startTime,
+            TimeSpan endTime)
         {
             return await _context.Assignments.AnyAsync(a =>
                 a.Teacher == teacher &&
@@ -25,7 +29,10 @@ namespace ScheduleApp.Infrastructure.Repositories
         }
 
         public async Task<bool> HasTeacherScheduleConflictExcluding(
-            string teacher, int day, TimeSpan startTime, TimeSpan endTime,
+            string teacher,
+            int day,
+            TimeSpan startTime,
+            TimeSpan endTime,
             int excludeAssignmentId)
         {
             return await _context.Assignments.AnyAsync(a =>
@@ -38,7 +45,10 @@ namespace ScheduleApp.Infrastructure.Repositories
         }
 
         public async Task<bool> HasClassroomScheduleConflict(
-            string classroom, int day, TimeSpan startTime, TimeSpan endTime)
+            string classroom,
+            int day,
+            TimeSpan startTime,
+            TimeSpan endTime)
         {
             return await _context.Assignments.AnyAsync(a =>
                 a.Classroom == classroom &&
@@ -49,7 +59,10 @@ namespace ScheduleApp.Infrastructure.Repositories
         }
 
         public async Task<bool> HasClassroomScheduleConflictExcluding(
-            string classroom, int day, TimeSpan startTime, TimeSpan endTime,
+            string classroom,
+            int day,
+            TimeSpan startTime,
+            TimeSpan endTime,
             int excludeAssignmentId)
         {
             return await _context.Assignments.AnyAsync(a =>
@@ -69,7 +82,10 @@ namespace ScheduleApp.Infrastructure.Repositories
 
         public async Task<List<Assignment>> GetAllAsync()
         {
-            return await _context.Assignments.ToListAsync();
+            return await _context.Assignments
+                .OrderBy(a => a.Day)
+                .ThenBy(a => a.StartTime)
+                .ToListAsync();
         }
 
         public async Task<Assignment?> GetByIdAsync(int id)
@@ -94,6 +110,7 @@ namespace ScheduleApp.Infrastructure.Repositories
 
             _context.Assignments.Remove(assignment);
             await _context.SaveChangesAsync();
+
             return true;
         }
     }
