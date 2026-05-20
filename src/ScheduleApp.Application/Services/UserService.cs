@@ -72,22 +72,34 @@ namespace ScheduleApp.Application.Services
         public async Task<UserResponseDto> CreateUserAsync(CreateUserDto dto)
         {
             var normalizedEmail = dto.Email.ToLower().Trim();
+            var trimmedDoc = dto.IdentityDocument.Trim();
+            var trimmedUsername = dto.Username.Trim();
 
-            var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
-
-            if (existing != null)
-            {
+            // 1. Email duplicado (incluyendo eliminados)
+            var existingByEmail = await _userRepository.GetByEmailIncludingDeletedAsync(normalizedEmail);
+            if (existingByEmail != null)
                 throw new InvalidOperationException(
                     $"Ya existe un usuario registrado con el email '{normalizedEmail}'.");
-            }
+
+            // 2. Documento de identidad duplicado
+            var existingByDoc = await _userRepository.GetByIdentityDocumentAsync(trimmedDoc);
+            if (existingByDoc != null)
+                throw new InvalidOperationException(
+                    $"Ya existe un usuario registrado con el documento '{trimmedDoc}'.");
+
+            // 3. Username duplicado
+            var existingByUsername = await _userRepository.GetByUsernameAsync(trimmedUsername);
+            if (existingByUsername != null)
+                throw new InvalidOperationException(
+                    $"Ya existe un usuario registrado con el username '{trimmedUsername}'.");
 
             var user = new User
             {
                 Id = Guid.NewGuid(),
                 FullName = dto.FullName.Trim(),
                 Email = normalizedEmail,
-                Username = dto.Username.Trim(),
-                IdentityDocument = dto.IdentityDocument.Trim(),
+                Username = trimmedUsername,
+                IdentityDocument = trimmedDoc,
                 PasswordHash = _passwordHasher.Hash(dto.Password),
                 RoleId = GetRoleId(dto.Role),
                 IsActive = dto.Status == "Activo",
@@ -96,44 +108,56 @@ namespace ScheduleApp.Application.Services
             };
 
             await _userRepository.AddAsync(user);
-
             return MapToResponseDto(user);
         }
 
         public async Task<UserResponseDto?> UpdateUserAsync(Guid id, UpdateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(id);
-
-            if (user == null)
-                return null;
+            if (user == null) return null;
 
             var normalizedEmail = dto.Email.ToLower().Trim();
+            var trimmedDoc = dto.IdentityDocument.Trim();
+            var trimmedUsername = dto.Username.Trim();
 
+            // Email
             if (user.Email != normalizedEmail)
             {
-                var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
-
+                var existing = await _userRepository.GetByEmailIncludingDeletedAsync(normalizedEmail);
                 if (existing != null && existing.Id != id)
-                {
                     throw new InvalidOperationException(
-                        $"Ya existe otro usuario registrado con el email '{normalizedEmail}'.");
-                }
+                        $"Ya existe otro usuario con el email '{normalizedEmail}'.");
+            }
+
+            // Documento de identidad
+            if (user.IdentityDocument != trimmedDoc)
+            {
+                var existing = await _userRepository.GetByIdentityDocumentAsync(trimmedDoc);
+                if (existing != null && existing.Id != id)
+                    throw new InvalidOperationException(
+                        $"Ya existe otro usuario con el documento '{trimmedDoc}'.");
+            }
+
+            // Username
+            if (user.Username != trimmedUsername)
+            {
+                var existing = await _userRepository.GetByUsernameAsync(trimmedUsername);
+                if (existing != null && existing.Id != id)
+                    throw new InvalidOperationException(
+                        $"Ya existe otro usuario con el username '{trimmedUsername}'.");
             }
 
             user.FullName = dto.FullName.Trim();
             user.Email = normalizedEmail;
-            user.Username = dto.Username.Trim();
-            user.IdentityDocument = dto.IdentityDocument.Trim();
+            user.Username = trimmedUsername;
+            user.IdentityDocument = trimmedDoc;
             user.RoleId = GetRoleId(dto.Role);
             user.IsActive = dto.IsActive;
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
-            {
                 user.PasswordHash = _passwordHasher.Hash(dto.Password);
-            }
 
             await _userRepository.UpdateAsync(user);
-
             return MapToResponseDto(user);
         }
 

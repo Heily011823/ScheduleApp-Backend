@@ -1,6 +1,7 @@
 ﻿using System;
 using ScheduleApp.Domain.Entities;
 namespace ScheduleApp.Application.Interfaces;
+
 public interface IUserRepository
 {
     Task<User?> GetByEmailAsync(string email);
@@ -10,6 +11,8 @@ public interface IUserRepository
         string? name,
         string? role,
         bool? isActive);
+
+    Task<User?> GetByEmailIncludingDeletedAsync(string email);
 
     // Paginacion con filtros (HU-58).
     // Retorna los registros de la pagina pedida y el total de registros que matchean los filtros.
@@ -22,4 +25,7 @@ public interface IUserRepository
 
     Task AddAsync(User user);
     Task UpdateAsync(User user);
+
+    Task<User?> GetByIdentityDocumentAsync(string identityDocument);
+    Task<User?> GetByUsernameAsync(string username);
 }

@@ -15,6 +15,14 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
+    // En UserRepository
+    public async Task<User?> GetByEmailIncludingDeletedAsync(string email)
+    {
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Email == email); // Sin filtro IsDeleted
+    }
+
     public async Task<User?> GetByEmailAsync(string email)
     {
         var normalizedEmail = email.ToLower().Trim();
@@ -132,5 +140,19 @@ public class UserRepository : IUserRepository
     {
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<User?> GetByIdentityDocumentAsync(string identityDocument)
+    {
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.IdentityDocument == identityDocument);
+    }
+
+    public async Task<User?> GetByUsernameAsync(string username)
+    {
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Username == username);
     }
 }
