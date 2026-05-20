@@ -167,7 +167,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+
+// Módulo de Usuarios y Autenticación (Auth)
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtService>(provider => new JwtService(jwtSecret, jwtIssuer, jwtAudience));
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
+builder.Services.AddScoped<AuthService>();
+
+// Módulo de Horarios con Validación de Créditos
+builder.Services.AddScoped<IProgramSemesterRepository, ProgramSemesterRepository>();
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<CreditValidationService>();
+
+
+// Módulo de Materias y Asignaciones (Soportan Paginación Eficiente)
+builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
+builder.Services.AddScoped<ISubjectService, SubjectService>();
+builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+builder.Services.AddScoped<IAssignmentService, AssignmentService>();
+
 var app = builder.Build();
+
+
+
+
 
 // =========================================================================
 // PIPELINE HTTP

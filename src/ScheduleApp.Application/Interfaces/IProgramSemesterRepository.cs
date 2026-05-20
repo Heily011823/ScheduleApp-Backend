@@ -1,21 +1,31 @@
-﻿using ScheduleApp.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ScheduleApp.Application.Interfaces
+using ScheduleApp.Domain.Entities;
+
+namespace ScheduleApp.Application.Interfaces;
+
+/// <summary>
+/// Contrato para acceso a datos de semestres por programa académico.
+/// </summary>
+public interface IProgramSemesterRepository
 {
+    /// <summary>
+    /// Obtiene todos los semestres de un programa específico por su ID.
+    /// </summary>
+    Task<List<ProgramSemester>> GetByProgramIdAsync(Guid programId);
 
-    /*
-     * Author: Salome Carmona
-     * Feature: Program Semesters CRUD
-     * Description: Repository contract for program semesters
-     */
+    /// <summary>
+    /// Actualiza la lista de semestres para un programa.
+    /// </summary>
+    Task UpdateAsync(List<ProgramSemester> semesters);
 
-    public interface IProgramSemesterRepository
-    {
-        Task<List<ProgramSemester>> GetByProgramIdAsync(Guid programId);
-
-        Task UpdateAsync(List<ProgramSemester> semesters);
-    }
+    /// <summary>
+    /// Busca la configuración de un semestre específico de un programa.
+    /// Usado para validar el límite de créditos por semestre.
+    /// </summary>
+    Task<ProgramSemester?> GetByProgramAndSemesterAsync(
+        string academicProgram,
+        int semesterNumber);
 }
