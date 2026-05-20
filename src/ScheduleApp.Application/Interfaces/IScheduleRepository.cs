@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 ﻿using System;
 using System.Collections.Generic;
@@ -34,18 +35,23 @@ public interface IScheduleRepository
     /// <summary>Guarda un nuevo horario.</summary>
     Task<Schedule> CreateAsync(Schedule schedule);
 
+=======
+﻿using ScheduleApp.Application.DTOs;
+
+public interface IScheduleRepository
+{
+>>>>>>> 6a7291211bdbfcbce1195fdf1ccac39699e42364
     Task<bool> AcademicProgramExistsAsync(Guid academicProgramId);
 
-        Task<List<GeneratedScheduleEntryDto>> GetSubjectsForGenerationAsync(
-            Guid academicProgramId,
-            int semesterNumber,
-            string shift
-        );
+    Task<List<GeneratedScheduleEntryDto>> GetSubjectsForGenerationAsync(
+        Guid academicProgramId,
+        int semesterNumber,
+        string shift
+    );
 
-        Task SaveAsync(
-            List<GeneratedScheduleEntryDto> schedules
-        );
+    Task SaveAsync(List<GeneratedScheduleEntryDto> schedules);
 
+<<<<<<< HEAD
         Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
             string academicProgram,
             string shift,
@@ -53,3 +59,11 @@ public interface IScheduleRepository
         );
 
 }
+=======
+    Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
+        string academicProgram,
+        string shift,
+        int semester
+    );
+}
+>>>>>>> 6a7291211bdbfcbce1195fdf1ccac39699e42364
