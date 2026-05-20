@@ -17,6 +17,13 @@ namespace ScheduleApp.Application.Services
             _subjectRepository = subjectRepository;
         }
 
+        // Detalle de materia por Id (HU-120).
+        // Reutiliza GetByIdAsync del repo que ya existe.
+        public async Task<Subject?> GetSubjectByIdAsync(Guid id)
+        {
+            return await _subjectRepository.GetByIdAsync(id);
+        }
+
         public async Task<byte[]> ExportSubjectsToExcelAsync()
         {
             var (subjects, totalCount) = await _subjectRepository.SearchAsync(
@@ -31,7 +38,6 @@ namespace ScheduleApp.Application.Services
             {
                 var worksheet = workbook.Worksheets.Add("Materias");
 
-                // Encabezados
                 worksheet.Cell(1, 1).Value = "Código";
                 worksheet.Cell(1, 2).Value = "Nombre";
                 worksheet.Cell(1, 3).Value = "Semestre";
@@ -39,9 +45,7 @@ namespace ScheduleApp.Application.Services
                 worksheet.Cell(1, 5).Value = "Horas Semanales";
                 worksheet.Cell(1, 6).Value = "Estado";
 
-                // Estilo encabezados
                 var headerRange = worksheet.Range(1, 1, 1, 6);
-
                 headerRange.Style.Font.Bold = true;
 
                 int row = 2;
@@ -56,7 +60,6 @@ namespace ScheduleApp.Application.Services
                     worksheet.Cell(row, 6).Value = subject.IsActive
                         ? "Activa"
                         : "Inactiva";
-
                     row++;
                 }
 
@@ -65,7 +68,6 @@ namespace ScheduleApp.Application.Services
                 using (var stream = new MemoryStream())
                 {
                     workbook.SaveAs(stream);
-
                     return stream.ToArray();
                 }
             }
@@ -84,7 +86,6 @@ namespace ScheduleApp.Application.Services
                     WeeklyHours = 3,
                     IsActive = true
                 },
-
                 new Subject
                 {
                     Code = "103026",
@@ -97,17 +98,12 @@ namespace ScheduleApp.Application.Services
             };
 
             var html = new StringBuilder();
-
             html.AppendLine("<html><body>");
-
             html.AppendLine("<h1>Reporte de Materias</h1>");
-
             html.AppendLine(
                 "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;width:100%'>"
             );
-
             html.AppendLine("<thead><tr>");
-
             html.AppendLine(
                 "<th>Código</th>" +
                 "<th>Nombre</th>" +
@@ -116,13 +112,11 @@ namespace ScheduleApp.Application.Services
                 "<th>Horas Semanales</th>" +
                 "<th>Estado</th>"
             );
-
             html.AppendLine("</tr></thead><tbody>");
 
             foreach (var subject in subjects)
             {
                 html.AppendLine("<tr>");
-
                 html.AppendLine($"<td>{subject.Code}</td>");
                 html.AppendLine($"<td>{subject.Name}</td>");
                 html.AppendLine($"<td>{subject.Semester}</td>");
@@ -131,12 +125,10 @@ namespace ScheduleApp.Application.Services
                 html.AppendLine(
                     $"<td>{(subject.IsActive ? "Activa" : "Inactiva")}</td>"
                 );
-
                 html.AppendLine("</tr>");
             }
 
             html.AppendLine("</tbody></table></body></html>");
-
             return Encoding.UTF8.GetBytes(html.ToString());
         }
 
@@ -144,21 +136,16 @@ namespace ScheduleApp.Application.Services
         {
             if (string.IsNullOrWhiteSpace(dto.Code))
                 throw new Exception("Code is required");
-
             if (string.IsNullOrWhiteSpace(dto.Name))
                 throw new Exception("Name is required");
-
             if (dto.Semester <= 0)
                 throw new Exception("Semester must be greater than 0");
-
             if (dto.Credits <= 0)
                 throw new Exception("Credits must be greater than 0");
-
             if (dto.WeeklyHours <= 0)
                 throw new Exception("Weekly hours must be greater than 0");
 
             var existingSubject = await _subjectRepository.GetByCodeAsync(dto.Code);
-
             if (existingSubject != null)
                 throw new Exception("Subject code already exists");
 
@@ -180,22 +167,16 @@ namespace ScheduleApp.Application.Services
         public async Task UpdateSubjectAsync(Guid id, UpdateSubjectDto dto)
         {
             var subject = await _subjectRepository.GetByIdAsync(id);
-
             if (subject == null)
                 throw new Exception("Subject not found");
-
             if (string.IsNullOrWhiteSpace(dto.Code))
                 throw new Exception("Code is required");
-
             if (string.IsNullOrWhiteSpace(dto.Name))
                 throw new Exception("Name is required");
-
             if (dto.Semester <= 0)
                 throw new Exception("Semester must be greater than 0");
-
             if (dto.Credits <= 0)
                 throw new Exception("Credits must be greater than 0");
-
             if (dto.WeeklyHours <= 0)
                 throw new Exception("Weekly hours must be greater than 0");
 
@@ -204,7 +185,7 @@ namespace ScheduleApp.Application.Services
             subject.Semester = dto.Semester;
             subject.Credits = dto.Credits;
             subject.WeeklyHours = dto.WeeklyHours;
-            subject.IsActive = dto.IsActive; // ✅ Agregada
+            subject.IsActive = dto.IsActive;
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -213,17 +194,13 @@ namespace ScheduleApp.Application.Services
         public async Task<bool> DeleteSubjectAsync(Guid id)
         {
             var subject = await _subjectRepository.GetByIdAsync(id);
-
             if (subject == null)
                 throw new Exception("Subject not found");
-
             if (!subject.IsActive)
                 throw new Exception("The subject has already been deleted");
 
             subject.IsActive = false;
-
             await _subjectRepository.UpdateAsync(subject);
-
             return true;
         }
 

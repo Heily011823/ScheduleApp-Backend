@@ -15,6 +15,25 @@ public class SubjectController : ControllerBase
         _subjectService = subjectService;
     }
 
+    // Detalle de materia por Id (HU-120).
+    // Retorna 200 con la materia o 404 si no existe.
+    // Autor: Jacobo
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetSubjectById(Guid id)
+    {
+        var subject = await _subjectService.GetSubjectByIdAsync(id);
+
+        if (subject is null)
+        {
+            return NotFound(new
+            {
+                message = $"No se encontro la materia con Id '{id}'."
+            });
+        }
+
+        return Ok(subject);
+    }
+
     // MODIFICADO: Ahora el endpoint recibe 'page' y 'pageSize' desde el Query String.
     // Se configuran valores por defecto (Página 1, 10 registros por página) si no se envían.
     [HttpGet("search")]
@@ -27,7 +46,6 @@ public class SubjectController : ControllerBase
     {
         try
         {
-            // Se invoca al servicio pasándole las variables matemáticas de paginación
             var pagedResult = await _subjectService.SearchSubjectsAsync(
                 search,
                 semester,
@@ -35,7 +53,6 @@ public class SubjectController : ControllerBase
                 page,
                 pageSize);
 
-            // Retorna un PagedResultDto<Subject> con la metadata y el estatus 200 OK
             return Ok(pagedResult);
         }
         catch (Exception ex)
