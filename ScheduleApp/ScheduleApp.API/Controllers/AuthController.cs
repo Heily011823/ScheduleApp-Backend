@@ -1,22 +1,19 @@
 ﻿using System;
+
 // ScheduleApp.API/Controllers/AuthController.cs
 namespace ScheduleApp.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Services;
-<<<<<<< HEAD
-=======
-using Microsoft.AspNetCore.Authorization;
->>>>>>> feature/23-logout-api
-
 
 /// Autor:  Mateo Quintero 
 /// Version: 0.1
 
 /// <summary>
 /// Controlador de autenticación. Expone los endpoints relacionados con
-/// el acceso al sistema: login, y en futuras ramas, logout y refresh token.
+/// el acceso al sistema: login, logout y en futuras ramas, refresh token.
 /// Ruta base: /api/auth
 /// </summary>
 [ApiController]
@@ -54,8 +51,6 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "Error interno del servidor.", detail = ex.Message });
         }
     }
-<<<<<<< HEAD
-=======
 
     /// <summary>
     /// Cierra la sesión del usuario autenticado.
@@ -88,5 +83,4 @@ public class AuthController : ControllerBase
             });
         }
     }
->>>>>>> feature/23-logout-api
 }
