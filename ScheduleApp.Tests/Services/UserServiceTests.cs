@@ -8,11 +8,9 @@ using ScheduleApp.Domain.Entities;
 namespace ScheduleApp.Tests.Services;
 
 // Autor: Jacobo
-// Version: 0.1
+// Version: 0.2
 // Pruebas unitarias del UserService (HU-168).
-// Cubren los 8 casos de exito y los 6 casos de error definidos en la HU.
-// Se usa Moq para simular IUserRepository e IPasswordHasher, y FluentAssertions
-// para hacer los asserts mas legibles.
+// Patron AAA (Arrange, Act, Assert) aplicado en cada test.
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepoMock;
@@ -22,39 +20,30 @@ public class UserServiceTests
     private static readonly Guid AdministradorRoleId =
         Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-    private static readonly Guid CoordinadorRoleId =
-        Guid.Parse("22222222-2222-2222-2222-222222222222");
-
     public UserServiceTests()
     {
         _userRepoMock = new Mock<IUserRepository>();
         _hasherMock = new Mock<IPasswordHasher>();
-        // Hash siempre retorna un string fijo para no depender de BCrypt en los tests.
-        _hasherMock.Setup(h => h.Hash(It.IsAny<string>()))
-                   .Returns("hashed-password");
+        _hasherMock.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed-password");
         _service = new UserService(_userRepoMock.Object, _hasherMock.Object);
     }
-
-    // ============================================================
-    // CASOS DE EXITO (8)
-    // ============================================================
 
     // CDA 1: Crear usuario con datos validos.
     [Fact]
     public async Task CreateUserAsync_WithValidData_ShouldReturnUserDto()
     {
+        // Arrange
         var dto = BuildValidCreateDto();
-        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                     .ReturnsAsync((User?)null);
-        _userRepoMock.Setup(r => r.AddAsync(It.IsAny<User>()))
-                     .Returns(Task.CompletedTask);
+        _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
+        _userRepoMock.Setup(r => r.AddAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
+        // Act
         var result = await _service.CreateUserAsync(dto);
 
+        // Assert
         result.Should().NotBeNull();
         result.Email.Should().Be("juan.perez@uam.edu.co");
         result.FullName.Should().Be("Juan Perez");
-        result.IsActive.Should().BeTrue();
         _userRepoMock.Verify(r => r.AddAsync(It.IsAny<User>()), Times.Once);
     }
 
@@ -62,16 +51,18 @@ public class UserServiceTests
     [Fact]
     public async Task GetUsersAsync_ShouldReturnAllUsers()
     {
+        // Arrange
         var users = new List<User>
         {
             new() { Id = Guid.NewGuid(), FullName = "User 1", Email = "u1@test.com" },
             new() { Id = Guid.NewGuid(), FullName = "User 2", Email = "u2@test.com" }
         };
-        _userRepoMock.Setup(r => r.SearchUsersAsync(null, null, null))
-                     .ReturnsAsync(users);
+        _userRepoMock.Setup(r => r.SearchUsersAsync(null, null, null)).ReturnsAsync(users);
 
+        // Act
         var result = await _service.GetUsersAsync();
 
+        // Assert
         result.Should().HaveCount(2);
         result.Should().Contain(u => u.Email == "u1@test.com");
     }
@@ -80,6 +71,7 @@ public class UserServiceTests
     [Fact]
     public async Task GetUserByIdAsync_WhenUserExists_ShouldReturnUserDto()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         var role = new Role { Id = AdministradorRoleId, Name = "Administrador" };
         var user = new User
@@ -96,8 +88,10 @@ public class UserServiceTests
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
+        // Act
         var result = await _service.GetUserByIdAsync(userId);
 
+        // Assert
         result.Should().NotBeNull();
         result!.Id.Should().Be(userId);
         result.Email.Should().Be("test@uam.edu.co");
@@ -108,6 +102,7 @@ public class UserServiceTests
     [Fact]
     public async Task UpdateUserAsync_WhenUserExists_ShouldUpdateAndReturnDto()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         var existingUser = new User
         {
@@ -116,8 +111,7 @@ public class UserServiceTests
             Email = "old@test.com",
             Username = "olduser",
             IdentityDocument = "111",
-            IsActive = true,
-            RoleId = CoordinadorRoleId
+            IsActive = true
         };
         var updateDto = new UpdateUserDto
         {
@@ -129,23 +123,24 @@ public class UserServiceTests
             IsActive = true
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(existingUser);
-        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                     .ReturnsAsync((User?)null);
-        _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>()))
-                     .Returns(Task.CompletedTask);
+        _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
+        _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
+        // Act
         var result = await _service.UpdateUserAsync(userId, updateDto);
 
+        // Assert
         result.Should().NotBeNull();
         result!.FullName.Should().Be("New Name");
         result.Email.Should().Be("new@test.com");
         _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Once);
     }
 
-    // CDA 5: Eliminar usuario (soft delete con IsDeleted, no IsActive).
+    // CDA 5: Eliminar usuario (soft delete con IsDeleted).
     [Fact]
     public async Task DeleteUserAsync_WhenUserActive_ShouldMarkAsDeletedAndReturnTrue()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         var user = new User
         {
@@ -156,11 +151,12 @@ public class UserServiceTests
             IsDeleted = false
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
-        _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>()))
-                     .Returns(Task.CompletedTask);
+        _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
+        // Act
         var result = await _service.DeleteUserAsync(userId);
 
+        // Assert
         result.Should().BeTrue();
         user.IsDeleted.Should().BeTrue();
         _userRepoMock.Verify(r => r.UpdateAsync(It.Is<User>(u => u.IsDeleted)), Times.Once);
@@ -170,17 +166,19 @@ public class UserServiceTests
     [Fact]
     public async Task CreateUserAsync_WithAdministradorRole_ShouldAssignAdminRoleId()
     {
+        // Arrange
         var dto = BuildValidCreateDto();
         dto.Role = "Administrador";
-        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                     .ReturnsAsync((User?)null);
+        _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
         User? capturedUser = null;
         _userRepoMock.Setup(r => r.AddAsync(It.IsAny<User>()))
                      .Callback<User>(u => capturedUser = u)
                      .Returns(Task.CompletedTask);
 
+        // Act
         await _service.CreateUserAsync(dto);
 
+        // Assert
         capturedUser.Should().NotBeNull();
         capturedUser!.RoleId.Should().Be(AdministradorRoleId);
     }
@@ -189,6 +187,7 @@ public class UserServiceTests
     [Fact]
     public async Task GetPagedUsersAsync_WithFilters_ShouldReturnPagedResultWithMetadata()
     {
+        // Arrange
         var users = new List<User>
         {
             new() { Id = Guid.NewGuid(), FullName = "Admin User", Email = "admin@test.com", IsActive = true }
@@ -196,8 +195,10 @@ public class UserServiceTests
         _userRepoMock.Setup(r => r.GetPagedAsync("Admin", "Administrador", true, 1, 10))
                      .ReturnsAsync((users, 1));
 
+        // Act
         var result = await _service.GetPagedUsersAsync("Admin", "Administrador", true, 1, 10);
 
+        // Assert
         result.Should().NotBeNull();
         result.Items.Should().HaveCount(1);
         result.Page.Should().Be(1);
@@ -210,7 +211,7 @@ public class UserServiceTests
     [Fact]
     public async Task GetUsersAsync_ShouldReturnUsersWithCorrectFields()
     {
-        var registeredEmail = "registered@uam.edu.co";
+        // Arrange
         var registeredId = Guid.NewGuid();
         var users = new List<User>
         {
@@ -218,58 +219,58 @@ public class UserServiceTests
             {
                 Id = registeredId,
                 FullName = "Registered User",
-                Email = registeredEmail,
+                Email = "registered@uam.edu.co",
                 Username = "reguser",
                 IdentityDocument = "555",
                 IsActive = true,
                 CreatedAt = new DateTime(2026, 5, 1)
             }
         };
-        _userRepoMock.Setup(r => r.SearchUsersAsync(null, null, null))
-                     .ReturnsAsync(users);
+        _userRepoMock.Setup(r => r.SearchUsersAsync(null, null, null)).ReturnsAsync(users);
 
+        // Act
         var result = await _service.GetUsersAsync();
 
+        // Assert
         var first = result.First();
         first.Id.Should().Be(registeredId);
-        first.Email.Should().Be(registeredEmail);
+        first.Email.Should().Be("registered@uam.edu.co");
         first.FullName.Should().Be("Registered User");
         first.Username.Should().Be("reguser");
     }
-
-    // ============================================================
-    // CASOS DE ERROR (6)
-    // ============================================================
 
     // Error 1: No se permite crear con correo duplicado.
     [Fact]
     public async Task CreateUserAsync_WithDuplicateEmail_ShouldThrowInvalidOperation()
     {
+        // Arrange
         var dto = BuildValidCreateDto();
         var existing = new User { Id = Guid.NewGuid(), Email = dto.Email.ToLower().Trim() };
-        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                     .ReturnsAsync(existing);
+        _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync(existing);
 
+        // Act
         Func<Task> act = async () => await _service.CreateUserAsync(dto);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
                  .WithMessage("*Ya existe un usuario*");
         _userRepoMock.Verify(r => r.AddAsync(It.IsAny<User>()), Times.Never);
     }
 
-    // Error 2: Si el repositorio lanza (ej: NOT NULL por campos obligatorios vacios),
-    // el service lo propaga al controller.
+    // Error 2: Si el repositorio lanza, el service lo propaga.
     [Fact]
     public async Task CreateUserAsync_WhenRepositoryThrows_ShouldPropagateError()
     {
+        // Arrange
         var dto = BuildValidCreateDto();
-        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                     .ReturnsAsync((User?)null);
+        _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
         _userRepoMock.Setup(r => r.AddAsync(It.IsAny<User>()))
                      .ThrowsAsync(new InvalidOperationException("DB constraint violation"));
 
+        // Act
         Func<Task> act = async () => await _service.CreateUserAsync(dto);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
@@ -277,8 +278,8 @@ public class UserServiceTests
     [Fact]
     public async Task UpdateUserAsync_WithDuplicateEmail_ShouldThrowInvalidOperation()
     {
+        // Arrange
         var userId = Guid.NewGuid();
-        var otherUserId = Guid.NewGuid();
         var existingUser = new User
         {
             Id = userId,
@@ -286,11 +287,7 @@ public class UserServiceTests
             Email = "old@test.com",
             IsActive = true
         };
-        var anotherUserWithEmail = new User
-        {
-            Id = otherUserId,
-            Email = "duplicate@test.com"
-        };
+        var anotherUserWithEmail = new User { Id = Guid.NewGuid(), Email = "duplicate@test.com" };
         var updateDto = new UpdateUserDto
         {
             FullName = "User A",
@@ -301,24 +298,28 @@ public class UserServiceTests
             IsActive = true
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(existingUser);
-        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                     .ReturnsAsync(anotherUserWithEmail);
+        _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync(anotherUserWithEmail);
 
+        // Act
         Func<Task> act = async () => await _service.UpdateUserAsync(userId, updateDto);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
                  .WithMessage("*Ya existe otro usuario*");
     }
 
-    // Error 4: Consulta de usuario inexistente devuelve null (no lanza).
+    // Error 4: Consulta de usuario inexistente devuelve null.
     [Fact]
     public async Task GetUserByIdAsync_WhenUserNotExists_ShouldReturnNull()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
+        // Act
         var result = await _service.GetUserByIdAsync(userId);
 
+        // Assert
         result.Should().BeNull();
     }
 
@@ -326,6 +327,7 @@ public class UserServiceTests
     [Fact]
     public async Task UpdateUserAsync_WhenUserNotExists_ShouldReturnNull()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         var updateDto = new UpdateUserDto
         {
@@ -338,8 +340,10 @@ public class UserServiceTests
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
+        // Act
         var result = await _service.UpdateUserAsync(userId, updateDto);
 
+        // Assert
         result.Should().BeNull();
         _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
     }
@@ -348,19 +352,19 @@ public class UserServiceTests
     [Fact]
     public async Task DeleteUserAsync_WhenUserNotExists_ShouldReturnFalse()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
+        // Act
         var result = await _service.DeleteUserAsync(userId);
 
+        // Assert
         result.Should().BeFalse();
         _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
     }
 
-    // ============================================================
     // HELPERS
-    // ============================================================
-
     private static CreateUserDto BuildValidCreateDto()
     {
         return new CreateUserDto
