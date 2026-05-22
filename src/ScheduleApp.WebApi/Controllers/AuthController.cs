@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Services;
 
+// ScheduleApp.API/Controllers/AuthController.cs
 namespace ScheduleApp.API.Controllers;
 
 /// Autor: Mateo Quintero 
