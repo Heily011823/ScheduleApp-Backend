@@ -44,4 +44,20 @@ public interface ITeacherRepository
     /// Actualiza un docente.
     /// </summary>
     Task UpdateAsync(Teacher teacher);
+
+
+    /// <summary>
+    /// Búsqueda rápida para autocompletado (optimizada)
+    /// </summary>
+    Task<IEnumerable<Teacher>> QuickSearchAsync(string term, int limit);
+
+    /// <summary>
+    /// Búsqueda avanzada con múltiples filtros optimizada
+    /// </summary>
+    Task<IEnumerable<Teacher>> SearchAdvancedAsync(
+        string? document,
+        string? name,
+        string? email,
+        bool? isActive);
+
 }

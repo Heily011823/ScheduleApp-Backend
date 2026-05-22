@@ -10,9 +10,12 @@ namespace ScheduleApp.WebApi.Controllers
 {
     /// <summary>
     /// Controlador para gestión de docentes del sistema académico.
-    /// Permite crear, consultar, actualizar y desactivar docentes.
     /// Ruta base: /api/teachers
     /// </summary>
+
+    /// Autor:  Mateo Quintero 
+    /// Version: 0.1
+    /// rama: 103-docentes-por-documento
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -25,55 +28,107 @@ namespace ScheduleApp.WebApi.Controllers
             _teacherService = teacherService;
         }
 
-        /*
-         * Author: Salome Carmona
-         * Feature: Available Teachers
-         * Description: Endpoint to retrieve active teachers
-         */
-        [HttpGet("available")]
-        public async Task<IActionResult> GetAvailableTeachers()
-        {
-            var teachers = await _teacherService.GetAvailableTeachersAsync();
-            return Ok(teachers);
-        }
-
         /// <summary>
-        /// Retorna la lista de docentes con filtros opcionales directo desde la base de datos.
+        /// Obtiene todos los docentes con filtros opcionales.
+        /// 🔍 Búsqueda por: documento, nombre, correo, especialidad, tipo contrato, estado
         /// </summary>
+        /// <param name="document">Número de documento (búsqueda parcial)</param>
+        /// <param name="name">Nombre o apellido (búsqueda parcial)</param>
+        /// <param name="email">Correo electrónico (búsqueda parcial)</param>
+        /// <param name="specialty">Especialidad/materia (búsqueda parcial)</param>
+        /// <param name="contractType">Tipo de contrato: Tiempo Completo, Cátedra, Medio Tiempo</param>
+        /// <param name="status">Estado: active, inactive, all</param>
+        /// <param name="page">Número de página (default: 1)</param>
+        /// <param name="pageSize">Tamaño de página (default: 10, max: 50)</param>
+        /// <returns>Lista filtrada de docentes</returns>
         [HttpGet]
         public async Task<IActionResult> GetAll(
-            [FromQuery] string? name,
-            [FromQuery] string? academicProgram,
-            [FromQuery] string? status)
+            [FromQuery] string? document = null,
+            [FromQuery] string? name = null,
+            [FromQuery] string? email = null,
+            [FromQuery] string? specialty = null,
+            [FromQuery] string? contractType = null,
+            [FromQuery] string? status = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                // CORREGIDO: Si desde el Frontend envían el placeholder "Estado", 
-                // lo convertimos a null para que la consulta a la BD no busque la palabra literal.
-                if (string.Equals(status, "Estado", StringComparison.OrdinalIgnoreCase))
+                // Validar parámetros de paginación
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 50) pageSize = 50;
+
+                var (teachers, totalCount) = await _teacherService.SearchAdvancedWithPaginationAsync(
+                    document, name, email, specialty, contractType, status, page, pageSize);
+
+                var response = new
                 {
-                    status = null;
-                }
+                    data = teachers,
+                    pagination = new
+                    {
+                        currentPage = page,
+                        pageSize = pageSize,
+                        totalCount = totalCount,
+                        totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+                    },
+                    filters = new
+                    {
+                        document = string.IsNullOrEmpty(document) ? "Todos" : document,
+                        name = string.IsNullOrEmpty(name) ? "Todos" : name,
+                        email = string.IsNullOrEmpty(email) ? "Todos" : email,
+                        specialty = string.IsNullOrEmpty(specialty) ? "Todas" : specialty,
+                        contractType = string.IsNullOrEmpty(contractType) ? "Todos" : contractType,
+                        status = string.IsNullOrEmpty(status) ? "Todos" : status
+                    }
+                };
 
-                var teachers = await _teacherService.SearchAsync(
-                    name,
-                    academicProgram,
-                    status);
-
-                return Ok(teachers);
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new
                 {
                     message = "Error al consultar docentes en la base de datos.",
-                    detail = ex.Message
+                    detail = ex.Message,
+                    timestamp = DateTime.UtcNow
                 });
             }
         }
 
         /// <summary>
-        /// Retorna un docente específico por su ID.
+        /// Búsqueda rápida (autocompletado) para sugerencias en tiempo real
+        /// </summary>
+        /// <param name="term">Término de búsqueda (busca en documento, nombre, correo)</param>
+        /// <param name="limit">Máximo de resultados (default: 5)</param>
+        [HttpGet("search/quick")]
+        public async Task<IActionResult> QuickSearch(
+            [FromQuery] string term,
+            [FromQuery] int limit = 5)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+                {
+                    return Ok(new { suggestions = new List<object>() });
+                }
+
+                var suggestions = await _teacherService.QuickSearchAsync(term, limit);
+                return Ok(new
+                {
+                    term = term,
+                    suggestions = suggestions,
+                    count = suggestions.Count()
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error en búsqueda rápida", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene un docente específico por su ID
         /// </summary>
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -81,15 +136,14 @@ namespace ScheduleApp.WebApi.Controllers
             try
             {
                 var teacher = await _teacherService.GetByIdAsync(id);
-
                 if (teacher is null)
                 {
                     return NotFound(new
                     {
-                        message = $"No se encontró un docente con el ID '{id}'."
+                        message = $"No se encontró un docente con el ID '{id}'.",
+                        timestamp = DateTime.UtcNow
                     });
                 }
-
                 return Ok(teacher);
             }
             catch (Exception ex)
@@ -103,29 +157,138 @@ namespace ScheduleApp.WebApi.Controllers
         }
 
         /// <summary>
-        /// Crea un nuevo docente.
+        /// Obtiene un docente por documento de identidad
+        /// </summary>
+        [HttpGet("document/{document}")]
+        public async Task<IActionResult> GetByDocument(string document)
+        {
+            try
+            {
+                var teacher = await _teacherService.GetByIdentityDocumentAsync(document);
+                if (teacher is null)
+                {
+                    return NotFound(new
+                    {
+                        message = $"No se encontró un docente con el documento '{document}'."
+                    });
+                }
+                return Ok(teacher);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al consultar el docente por documento.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene un docente por correo electrónico
+        /// </summary>
+        [HttpGet("email/{email}")]
+        public async Task<IActionResult> GetByEmail(string email)
+        {
+            try
+            {
+                var teacher = await _teacherService.GetByEmailAsync(email);
+                if (teacher is null)
+                {
+                    return NotFound(new
+                    {
+                        message = $"No se encontró un docente con el correo '{email}'."
+                    });
+                }
+                return Ok(teacher);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al consultar el docente por correo.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los docentes activos (útiles para asignaciones)
+        /// </summary>
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActiveTeachers()
+        {
+            try
+            {
+                var teachers = await _teacherService.GetActiveTeachersAsync();
+                return Ok(new
+                {
+                    count = teachers.Count(),
+                    data = teachers
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al consultar docentes activos.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene estadísticas de docentes (dashboard)
+        /// </summary>
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetStatistics()
+        {
+            try
+            {
+                var stats = await _teacherService.GetStatisticsAsync();
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al obtener estadísticas.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Crea un nuevo docente
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateTeacherDto dto)
         {
-            // CORREGIDO: Validación preventiva del modelo de datos entrante
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new
+                {
+                    message = "Datos inválidos",
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
+                });
 
             try
             {
                 var teacher = await _teacherService.CreateAsync(dto);
-
                 return CreatedAtAction(
                     nameof(GetById),
                     new { id = teacher.Id },
-                    teacher);
+                    new
+                    {
+                        message = "Docente creado exitosamente",
+                        teacher = teacher
+                    });
             }
             catch (InvalidOperationException ex)
             {
                 return Conflict(new
                 {
-                    message = ex.Message
+                    message = ex.Message,
+                    timestamp = DateTime.UtcNow
                 });
             }
             catch (Exception ex)
@@ -139,7 +302,7 @@ namespace ScheduleApp.WebApi.Controllers
         }
 
         /// <summary>
-        /// Actualiza la información de un docente existente.
+        /// Actualiza la información de un docente existente
         /// </summary>
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTeacherDto dto)
@@ -150,7 +313,6 @@ namespace ScheduleApp.WebApi.Controllers
             try
             {
                 var teacher = await _teacherService.UpdateAsync(id, dto);
-
                 if (teacher is null)
                 {
                     return NotFound(new
@@ -158,8 +320,11 @@ namespace ScheduleApp.WebApi.Controllers
                         message = $"No se encontró un docente con el ID '{id}'."
                     });
                 }
-
-                return Ok(teacher);
+                return Ok(new
+                {
+                    message = "Docente actualizado exitosamente",
+                    teacher = teacher
+                });
             }
             catch (InvalidOperationException ex)
             {
@@ -179,7 +344,7 @@ namespace ScheduleApp.WebApi.Controllers
         }
 
         /// <summary>
-        /// Desactiva un docente (eliminación lógica).
+        /// Desactiva un docente (eliminación lógica)
         /// </summary>
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
@@ -187,7 +352,6 @@ namespace ScheduleApp.WebApi.Controllers
             try
             {
                 var deleted = await _teacherService.DeleteAsync(id);
-
                 if (!deleted)
                 {
                     return NotFound(new
@@ -195,8 +359,12 @@ namespace ScheduleApp.WebApi.Controllers
                         message = $"No se encontró un docente con el ID '{id}'."
                     });
                 }
-
-                return NoContent();
+                return Ok(new
+                {
+                    message = "Docente desactivado exitosamente",
+                    teacherId = id,
+                    status = "inactive"
+                });
             }
             catch (Exception ex)
             {
@@ -208,7 +376,39 @@ namespace ScheduleApp.WebApi.Controllers
             }
         }
 
-        
+        /// <summary>
+        /// Activa un docente previamente desactivado
+        /// </summary>
+        [HttpPatch("{id:guid}/activate")]
+        public async Task<IActionResult> Activate(Guid id)
+        {
+            try
+            {
+                var teacher = await _teacherService.ChangeStatusAsync(id, true);
+                if (teacher is null)
+                    return NotFound(new
+                    {
+                        message = $"No se encontró un docente con el ID '{id}'."
+                    });
+                return Ok(new
+                {
+                    message = "Docente activado exitosamente",
+                    teacher = teacher
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al activar el docente.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Cambia el estado del docente (activo/inactivo)
+        /// </summary>
         [HttpPatch("{id:guid}/status")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeStatusDto dto)
         {
@@ -223,8 +423,11 @@ namespace ScheduleApp.WebApi.Controllers
                     {
                         message = $"No se encontró un docente con el ID '{id}'."
                     });
-
-                return Ok(teacher);
+                return Ok(new
+                {
+                    message = dto.IsActive ? "Docente activado" : "Docente desactivado",
+                    teacher = teacher
+                });
             }
             catch (Exception ex)
             {
@@ -234,6 +437,82 @@ namespace ScheduleApp.WebApi.Controllers
                     detail = ex.Message
                 });
             }
+        }
+
+        /// <summary>
+        /// Exporta docentes filtrados a CSV
+        /// </summary>
+        [HttpGet("export/csv")]
+        public async Task<IActionResult> ExportToCsv(
+            [FromQuery] string? document = null,
+            [FromQuery] string? name = null,
+            [FromQuery] string? email = null,
+            [FromQuery] string? specialty = null,
+            [FromQuery] string? contractType = null,
+            [FromQuery] string? status = null)
+        {
+            try
+            {
+                var teachers = await _teacherService.SearchAdvancedAsync(
+                    document, name, email, specialty, contractType, status);
+
+                var csvContent = GenerateCsv(teachers);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
+
+                return File(
+                    bytes,
+                    "text/csv",
+                    $"docentes_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al exportar docentes.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene tipos de contrato disponibles (para filtros)
+        /// </summary>
+        [HttpGet("metadata/contract-types")]
+        public async Task<IActionResult> GetContractTypes()
+        {
+            var contractTypes = new[] { "Tiempo Completo", "Medio Tiempo", "Cátedra", "No asignado" };
+            return Ok(new { contractTypes });
+        }
+
+        /// <summary>
+        /// Obtiene especialidades disponibles (para filtros)
+        /// </summary>
+        [HttpGet("metadata/specialties")]
+        public async Task<IActionResult> GetSpecialties()
+        {
+            var specialties = new[]
+            {
+                "Ética", "Cálculo Diferencial", "Inglés I", "Fundamentos de POO",
+                "Paradigmas de Lenguajes", "Ingeniería de Software II", "Bases de Datos I",
+                "Técnicas de Programación", "Programación Back End", "Cultura Política"
+            };
+            return Ok(new { specialties });
+        }
+
+        private string GenerateCsv(IEnumerable<TeacherResponseDto> teachers)
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("ID,Nombre,Email,Documento,Teléfono,Especialidad,Horas,Tipo Contrato,Estado,Fecha Creación");
+
+            foreach (var t in teachers)
+            {
+                csv.AppendLine($"{t.Id},{t.FirstName} {t.LastName},{t.Email},{t.IdentityDocument}," +
+                              $"{t.PhoneNumber},{t.Specialties},{t.TeachingHours},{t.ContractType}," +
+                              $"{(t.IsActive ? "Activo" : "Inactivo")},{t.CreatedAt:yyyy-MM-dd}");
+            }
+
+            return csv.ToString();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 // src/ScheduleApp.Application/DTOs/ChangeStatusDto.cs
@@ -16,5 +17,6 @@ public class ChangeStatusDto
     /// <summary>
     /// true = activar docente, false = desactivar docente.
     /// </summary>
+    [Required]
     public bool IsActive { get; set; }
 }

@@ -116,5 +116,88 @@ namespace ScheduleApp.Infrastructure.Repositories
             _context.Teachers.Update(teacher);
             await _context.SaveChangesAsync();
         }
+
+
+        /// <summary>
+        /// Búsqueda rápida optimizada para autocompletado
+        /// </summary>
+        public async Task<IEnumerable<Teacher>> QuickSearchAsync(string term, int limit)
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+                return new List<Teacher>();
+
+            var searchTerm = term.Trim().ToLower();
+
+            var query = _context.Teachers
+                .Include(t => t.TeacherSubjects)
+                    .ThenInclude(ts => ts.Subject)
+                .Where(t => t.IsActive == true)
+                .Where(t =>
+                    t.IdentityDocument.ToLower().Contains(searchTerm) ||
+                    (t.FirstName + " " + t.LastName).ToLower().Contains(searchTerm) ||
+                    t.Email.ToLower().Contains(searchTerm));
+
+            // Log para depuración
+            var sql = query.ToQueryString();
+            Console.WriteLine($"SQL generado: {sql}");
+
+            var results = await query.Take(limit).ToListAsync();
+            Console.WriteLine($"Resultados encontrados: {results.Count}");
+
+            return results;
+        }
+
+        /// <summary>
+        /// Búsqueda avanzada con múltiples filtros optimizada
+        /// </summary>
+        public async Task<IEnumerable<Teacher>> SearchAdvancedAsync(
+            string? document,
+            string? name,
+            string? email,
+            bool? isActive)
+        {
+            var query = _context.Teachers
+                .Include(t => t.Availabilities)
+                .Include(t => t.TeacherSubjects)
+                    .ThenInclude(ts => ts.Subject)
+                .AsQueryable();
+
+            // 🔍 Búsqueda por documento
+            if (!string.IsNullOrWhiteSpace(document))
+            {
+                query = query.Where(t => t.IdentityDocument.Contains(document.Trim()));
+                Console.WriteLine($"Filtrando por documento: {document}"); // Para depuración
+            }
+
+            // 🔍 Búsqueda por nombre completo
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var searchTerm = name.Trim().ToLower();
+                query = query.Where(t =>
+                    (t.FirstName + " " + t.LastName).ToLower().Contains(searchTerm) ||
+                    t.FirstName.ToLower().Contains(searchTerm) ||
+                    t.LastName.ToLower().Contains(searchTerm));
+                Console.WriteLine($"Filtrando por nombre: {name}");
+            }
+
+            // 🔍 Búsqueda por correo electrónico
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                query = query.Where(t => t.Email.ToLower().Contains(email.Trim().ToLower()));
+                Console.WriteLine($"Filtrando por email: {email}");
+            }
+
+            // Filtro por estado
+            if (isActive.HasValue)
+            {
+                query = query.Where(t => t.IsActive == isActive.Value);
+                Console.WriteLine($"Filtrando por estado activo: {isActive.Value}");
+            }
+
+            var results = await query.ToListAsync();
+            Console.WriteLine($"Total resultados encontrados: {results.Count}");
+
+            return results;
+        }
     }
 }

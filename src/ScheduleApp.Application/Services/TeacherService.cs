@@ -81,6 +81,206 @@ namespace ScheduleApp.Application.Services
         }
 
         /// <summary>
+        /// Obtiene un docente por su documento de identidad.
+        /// </summary>
+        public async Task<TeacherResponseDto?> GetByIdentityDocumentAsync(string document)
+        {
+            var teacher = await _teacherRepository.GetByIdentityDocumentAsync(document);
+            if (teacher == null) return null;
+
+            return MapToResponseDto(teacher);
+        }
+
+        /// <summary>
+        /// Obtiene un docente por su correo electrónico.
+        /// </summary>
+        public async Task<TeacherResponseDto?> GetByEmailAsync(string email)
+        {
+            var teacher = await _teacherRepository.GetByEmailAsync(email);
+            if (teacher == null) return null;
+
+            return MapToResponseDto(teacher);
+        }
+
+        /// <summary>
+        /// Obtiene todos los docentes activos (útiles para asignaciones y combos).
+        /// </summary>
+        public async Task<IEnumerable<TeacherResponseDto>> GetActiveTeachersAsync()
+        {
+            var teachers = await _teacherRepository.GetAvailableTeachersAsync();
+            return teachers.Select(t => MapToResponseDto(t));
+        }
+
+        /// <summary>
+        /// Búsqueda avanzada con todos los filtros requeridos por la historia #103
+        /// </summary>
+        public async Task<IEnumerable<TeacherResponseDto>> SearchAdvancedAsync(
+            string? document,
+            string? name,
+            string? email,
+            string? academicProgram,
+            string? status)
+        {
+            // Convertir status a booleano
+            bool? isActiveFilter = null;
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status.Equals("active", StringComparison.OrdinalIgnoreCase) ||
+                    status.Equals("Activo", StringComparison.OrdinalIgnoreCase))
+                    isActiveFilter = true;
+                else if (status.Equals("inactive", StringComparison.OrdinalIgnoreCase) ||
+                         status.Equals("Inactivo", StringComparison.OrdinalIgnoreCase))
+                    isActiveFilter = false;
+            }
+
+            // Búsqueda en repositorio con los filtros principales
+            var teachers = await _teacherRepository.SearchAdvancedAsync(
+                document, name, email, isActiveFilter);
+
+            // Filtro adicional por programa académico (si existe)
+            if (!string.IsNullOrEmpty(academicProgram))
+            {
+                teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
+                    ts.ContractType.Contains(academicProgram, StringComparison.OrdinalIgnoreCase) ||
+                    (ts.Subject != null && ts.Subject.Name.Contains(academicProgram, StringComparison.OrdinalIgnoreCase))));
+            }
+
+            return teachers.Select(t => MapToResponseDto(t));
+        }
+
+        /// <summary>
+        /// Búsqueda avanzada con paginación para mejorar el rendimiento en listados grandes.
+        /// </summary>
+        public async Task<(IEnumerable<TeacherResponseDto> Teachers, int TotalCount)> SearchAdvancedWithPaginationAsync(
+            string? document,
+            string? name,
+            string? email,
+            string? academicProgram,
+            string? contractType,
+            string? status,
+            int page,
+            int pageSize)
+        {
+            // Convertir status a booleano
+            bool? isActiveFilter = null;
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status.Equals("active", StringComparison.OrdinalIgnoreCase) ||
+                    status.Equals("Activo", StringComparison.OrdinalIgnoreCase))
+                    isActiveFilter = true;
+                else if (status.Equals("inactive", StringComparison.OrdinalIgnoreCase) ||
+                         status.Equals("Inactivo", StringComparison.OrdinalIgnoreCase))
+                    isActiveFilter = false;
+            }
+
+            // Búsqueda en repositorio con los filtros principales
+            var teachers = await _teacherRepository.SearchAdvancedAsync(
+                document, name, email, isActiveFilter);
+
+            // Filtro adicional por programa académico (si existe)
+            if (!string.IsNullOrEmpty(academicProgram))
+            {
+                teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
+                    ts.ContractType.Contains(academicProgram, StringComparison.OrdinalIgnoreCase) ||
+                    (ts.Subject != null && ts.Subject.Name.Contains(academicProgram, StringComparison.OrdinalIgnoreCase))));
+            }
+
+            // Filtro por tipo de contrato
+            if (!string.IsNullOrEmpty(contractType))
+            {
+                teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
+                    ts.ContractType.Equals(contractType, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            // Convertir a lista para contar y paginar
+            var teacherList = teachers.ToList();
+            var totalCount = teacherList.Count;
+
+            // Aplicar paginación
+            var paginatedTeachers = teacherList
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => MapToResponseDto(t));
+
+            return (paginatedTeachers, totalCount);
+        }
+
+        /// <summary>
+        /// Búsqueda rápida para autocompletado (sugerencias en tiempo real).
+        /// </summary>
+        public async Task<IEnumerable<object>> QuickSearchAsync(string term, int limit)
+        {
+            // Validar que el término tenga al menos 2 caracteres
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+            {
+                Console.WriteLine($"Término de búsqueda muy corto: '{term}'");
+                return new List<object>();
+            }
+
+            Console.WriteLine($"Buscando docentes con término: '{term}', límite: {limit}");
+
+            // Llamar al repositorio con búsqueda en documento, nombre y email
+            var teachers = await _teacherRepository.SearchAdvancedAsync(
+                document: term,  // Buscar en documento
+                name: term,      // Buscar en nombre
+                email: term,     // Buscar en email
+                isActive: true); // Solo docentes activos
+
+            Console.WriteLine($"Docentes encontrados (antes de mapeo): {teachers.Count()}");
+
+            // Mostrar los primeros 5 resultados para depuración
+            foreach (var t in teachers.Take(5))
+            {
+                Console.WriteLine($"- {t.FirstName} {t.LastName} | Doc: {t.IdentityDocument} | Email: {t.Email}");
+            }
+
+            // Mapear resultados
+            var suggestions = teachers
+                .Take(limit)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    fullName = $"{t.FirstName} {t.LastName}",
+                    document = t.IdentityDocument,
+                    email = t.Email,
+                    specialty = t.TeacherSubjects?.FirstOrDefault()?.Subject?.Name ?? "General"
+                });
+
+            return suggestions;
+        }
+
+        /// <summary>
+        /// Obtiene estadísticas agregadas de docentes para el dashboard.
+        /// </summary>
+        public async Task<object> GetStatisticsAsync()
+        {
+            var allTeachers = await _teacherRepository.SearchAdvancedAsync(null, null, null, null);
+            var activeTeachers = allTeachers.Where(t => t.IsActive);
+            var inactiveTeachers = allTeachers.Where(t => !t.IsActive);
+
+            // Estadísticas por tipo de contrato
+            var contractTypeStats = allTeachers
+                .SelectMany(t => t.TeacherSubjects)
+                .GroupBy(ts => ts.ContractType)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Total de horas de enseñanza
+            var totalTeachingHours = allTeachers
+                .SelectMany(t => t.Availabilities)
+                .Sum(a => a.MaxTeachingHours);
+
+            return new
+            {
+                total = allTeachers.Count(),
+                active = activeTeachers.Count(),
+                inactive = inactiveTeachers.Count(),
+                byContractType = contractTypeStats,
+                totalTeachingHours = totalTeachingHours,
+                averageHoursPerTeacher = allTeachers.Any() ? totalTeachingHours / allTeachers.Count() : 0
+            };
+        }
+
+        /// <summary>
         /// Crea un nuevo docente de forma atómica en la base de datos junto a sus entidades hijas.
         /// </summary>
         public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
@@ -194,6 +394,52 @@ namespace ScheduleApp.Application.Services
         }
 
         /// <summary>
+        /// Búsqueda avanzada con todos los filtros requeridos por la historia #103
+        /// </summary>
+        public async Task<IEnumerable<TeacherResponseDto>> SearchAdvancedAsync(
+            string? document,
+            string? name,
+            string? email,
+            string? academicProgram,
+            string? contractType,  // ← Agrega este parámetro
+            string? status)
+        {
+            // Convertir status a booleano
+            bool? isActiveFilter = null;
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status.Equals("active", StringComparison.OrdinalIgnoreCase) ||
+                    status.Equals("Activo", StringComparison.OrdinalIgnoreCase))
+                    isActiveFilter = true;
+                else if (status.Equals("inactive", StringComparison.OrdinalIgnoreCase) ||
+                         status.Equals("Inactivo", StringComparison.OrdinalIgnoreCase))
+                    isActiveFilter = false;
+            }
+
+            // Búsqueda en repositorio con los filtros principales
+            var teachers = await _teacherRepository.SearchAdvancedAsync(
+                document, name, email, isActiveFilter);
+
+            // Filtro adicional por programa académico (si existe)
+            if (!string.IsNullOrEmpty(academicProgram))
+            {
+                teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
+                    ts.ContractType.Contains(academicProgram, StringComparison.OrdinalIgnoreCase) ||
+                    (ts.Subject != null && ts.Subject.Name.Contains(academicProgram, StringComparison.OrdinalIgnoreCase))));
+            }
+
+            // Filtro por tipo de contrato (NUEVO)
+            if (!string.IsNullOrEmpty(contractType))
+            {
+                teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
+                    ts.ContractType.Equals(contractType, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return teachers.Select(t => MapToResponseDto(t));
+        }
+
+
+        /// <summary>
         /// Ejecuta una desactivación lógica (Soft Delete) del docente.
         /// </summary>
         public async Task<bool> DeleteAsync(Guid id)
@@ -229,39 +475,27 @@ namespace ScheduleApp.Application.Services
         private static TeacherResponseDto MapToResponseDto(Teacher teacher)
         {
             var mainSubject = teacher.TeacherSubjects?.FirstOrDefault();
-
             var mainAvailability = teacher.Availabilities?.FirstOrDefault();
 
             return new TeacherResponseDto
             {
                 Id = teacher.Id,
-
                 FirstName = teacher.FirstName,
-
                 LastName = teacher.LastName,
-
                 Email = teacher.Email,
-
                 IdentityDocument = teacher.IdentityDocument,
-
                 PhoneNumber = teacher.PhoneNumber,
-
                 IsActive = teacher.IsActive,
-
                 CreatedAt = teacher.CreatedAt,
-
                 UpdatedAt = teacher.UpdatedAt,
-
                 // ======================================================
                 // RELACIÓN MANY TO MANY
                 // ======================================================
                 ContractType = mainSubject?.ContractType ?? "No asignado",
-
                 // ======================================================
                 // ESPECIALIDAD
                 // ======================================================
                 Specialties = mainSubject?.Subject?.Name ?? "General",
-
                 // ======================================================
                 // HORAS
                 // ======================================================
