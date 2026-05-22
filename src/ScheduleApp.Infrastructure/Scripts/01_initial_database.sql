@@ -8,13 +8,20 @@ BEGIN TRANSACTION;
 -- ========================
 -- ROLES
 -- ========================
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Roles]') AND type in (N'U'))
-BEGIN
-    CREATE TABLE Roles (
-        Id UNIQUEIDENTIFIER PRIMARY KEY,
-        Name NVARCHAR(50) NOT NULL UNIQUE
-    );
-END
+-- Reemplaza las líneas que definen @AdminRoleId y @CoordRoleId
+DECLARE @AdminRoleId UNIQUEIDENTIFIER = '11111111-1111-1111-1111-111111111111';
+DECLARE @CoordRoleId UNIQUEIDENTIFIER = '22222222-2222-2222-2222-222222222222';
+
+-- Luego inserta los roles solo si no existen (usando esos GUIDs)
+IF NOT EXISTS (SELECT 1 FROM Roles WHERE Name = 'Administrador')
+    INSERT INTO Roles (Id, Name) VALUES (@AdminRoleId, 'Administrador');
+ELSE
+    UPDATE Roles SET Id = @AdminRoleId WHERE Name = 'Administrador';
+
+IF NOT EXISTS (SELECT 1 FROM Roles WHERE Name = 'Coordinador')
+    INSERT INTO Roles (Id, Name) VALUES (@CoordRoleId, 'Coordinador');
+ELSE
+    UPDATE Roles SET Id = @CoordRoleId WHERE Name = 'Coordinador';
 
 -- ========================
 -- USERS

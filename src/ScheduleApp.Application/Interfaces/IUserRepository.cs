@@ -5,6 +5,8 @@ namespace ScheduleApp.Application.Interfaces;
 public interface IUserRepository
 {
     Task<User?> GetByEmailAsync(string email);
+
+    Task<Guid?> GetRoleIdByNameAsync(string roleName);
     Task<User?> GetByEmailOrUsernameAsync(string login);
     Task<User?> GetByIdAsync(Guid id);
     Task<IEnumerable<User>> SearchUsersAsync(

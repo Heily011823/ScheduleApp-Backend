@@ -13,17 +13,18 @@ public class AppDbContext : DbContext
     }
     public DbSet<ProgramSemester> ProgramSemesters { get; set; }
     public DbSet<User> Users => Set<User>();
-    public DbSet<Role> Roles => Set<Role>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<TapsiRule> TapsiRules => Set<TapsiRule>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Classroom> Classrooms { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
-    public DbSet<AcademicProgram> AcademicPrograms { get; set; }
+    public DbSet<Role> Roles { get; set; }
 
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
     public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
+
+    public DbSet<AcademicProgram> AcademicPrograms { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

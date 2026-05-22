@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 
@@ -146,6 +147,11 @@ namespace ScheduleApp.API.Controllers
             {
                 return Conflict(new { message = "Ya existe un usuario con ese email." });
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+                when (ex.InnerException?.Message.Contains("CHK_User_Email") == true)
+            {
+                return BadRequest(new { message = "El email debe pertenecer al dominio @autonoma.edu.co" });
+            }
             catch (InvalidOperationException ex)
             {
                 // Captura excepciones de validación de negocio (email duplicado, documento duplicado, etc.)
@@ -214,6 +220,11 @@ namespace ScheduleApp.API.Controllers
             {
                 _logger.LogWarning("Datos inválidos al actualizar usuario {UserId}: {Message}", id, ex.Message);
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (DbUpdateException ex)
+                when (ex.InnerException?.Message.Contains("CHK_User_Email") == true)
+            {
+                return BadRequest(new { message = "El email debe pertenecer al dominio @autonoma.edu.co" });
             }
             catch (Exception ex)
             {

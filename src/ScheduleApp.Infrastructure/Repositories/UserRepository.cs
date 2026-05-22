@@ -155,4 +155,11 @@ public class UserRepository : IUserRepository
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Username == username);
     }
+
+    public async Task<Guid?> GetRoleIdByNameAsync(string roleName)
+    {
+        var role = await _context.Roles
+            .FirstOrDefaultAsync(r => r.Name == roleName);
+        return role?.Id;
+    }
 }

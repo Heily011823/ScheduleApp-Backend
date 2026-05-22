@@ -9,8 +9,11 @@ public class CreateUserDto
     public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El correo electrónico es obligatorio")]
-    [EmailAddress]
+    [EmailAddress(ErrorMessage = "El formato del correo no es válido")]
     [StringLength(150)]
+    [RegularExpression(
+        @"^[a-zA-Z0-9._%+\-]+@autonoma\.edu\.co$",
+        ErrorMessage = "El email debe pertenecer al dominio @autonoma.edu.co")]
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El usuario es obligatorio")]
@@ -26,11 +29,9 @@ public class CreateUserDto
     public string Password { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Debe confirmar la contraseña")]
-    [Compare(nameof(Password),
-        ErrorMessage = "Las contraseñas no coinciden")]
+    [Compare(nameof(Password), ErrorMessage = "Las contraseñas no coinciden")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    // Temporalmente seguimos enviando texto
     [Required(ErrorMessage = "El rol es obligatorio")]
     public string Role { get; set; } = string.Empty;
 

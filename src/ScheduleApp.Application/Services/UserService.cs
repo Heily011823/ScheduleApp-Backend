@@ -9,11 +9,6 @@ namespace ScheduleApp.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
 
-        private static readonly Guid AdministradorRoleId =
-            Guid.Parse("11111111-1111-1111-1111-111111111111");
-
-        private static readonly Guid CoordinadorRoleId =
-            Guid.Parse("22222222-2222-2222-2222-222222222222");
 
         public UserService(
             IUserRepository userRepository,
@@ -75,19 +70,24 @@ namespace ScheduleApp.Application.Services
             var trimmedDoc = dto.IdentityDocument.Trim();
             var trimmedUsername = dto.Username.Trim();
 
-            // 1. Email duplicado (incluyendo eliminados)
+            // 1. Resolver rol primero
+            var roleId = await _userRepository.GetRoleIdByNameAsync(dto.Role.Trim());
+            if (roleId == null)
+                throw new ArgumentException($"El rol '{dto.Role}' no existe.");
+
+            // 2. Email duplicado
             var existingByEmail = await _userRepository.GetByEmailIncludingDeletedAsync(normalizedEmail);
             if (existingByEmail != null)
                 throw new InvalidOperationException(
                     $"Ya existe un usuario registrado con el email '{normalizedEmail}'.");
 
-            // 2. Documento de identidad duplicado
+            // 3. Documento duplicado
             var existingByDoc = await _userRepository.GetByIdentityDocumentAsync(trimmedDoc);
             if (existingByDoc != null)
                 throw new InvalidOperationException(
                     $"Ya existe un usuario registrado con el documento '{trimmedDoc}'.");
 
-            // 3. Username duplicado
+            // 4. Username duplicado
             var existingByUsername = await _userRepository.GetByUsernameAsync(trimmedUsername);
             if (existingByUsername != null)
                 throw new InvalidOperationException(
@@ -101,7 +101,7 @@ namespace ScheduleApp.Application.Services
                 Username = trimmedUsername,
                 IdentityDocument = trimmedDoc,
                 PasswordHash = _passwordHasher.Hash(dto.Password),
-                RoleId = GetRoleId(dto.Role),
+                RoleId = roleId.Value,
                 IsActive = dto.Status == "Activo",
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
@@ -151,8 +151,12 @@ namespace ScheduleApp.Application.Services
             user.Email = normalizedEmail;
             user.Username = trimmedUsername;
             user.IdentityDocument = trimmedDoc;
-            user.RoleId = GetRoleId(dto.Role);
             user.IsActive = dto.IsActive;
+            var updatedRoleId = await _userRepository.GetRoleIdByNameAsync(dto.Role.Trim());
+            if (updatedRoleId == null)
+                throw new ArgumentException($"El rol '{dto.Role}' no existe.");
+            user.RoleId = updatedRoleId.Value;
+          
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
                 user.PasswordHash = _passwordHasher.Hash(dto.Password);
@@ -181,12 +185,6 @@ namespace ScheduleApp.Application.Services
             return true;
         }
 
-        private static Guid GetRoleId(string role)
-        {
-            return role.Trim() == "Administrador"
-                ? AdministradorRoleId
-                : CoordinadorRoleId;
-        }
 
         private static UserResponseDto MapToResponseDto(User user)
         {
