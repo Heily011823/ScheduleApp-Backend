@@ -493,9 +493,9 @@ namespace ScheduleApp.WebApi.Controllers
         {
             var specialties = new[]
             {
-                "Ética", "Cálculo Diferencial", "Inglés I", "Fundamentos de POO",
-                "Paradigmas de Lenguajes", "Ingeniería de Software II", "Bases de Datos I",
-                "Técnicas de Programación", "Programación Back End", "Cultura Política"
+                 "Lenguas extrangeraas", "Matemáticas", "Humanísticas",
+                "Física, Ética", "Arquitectura de Software", "Electrónica Digital ",
+                "Ingeniería de Software", "Backend", "Frontend","Ingeniero de Datos"
             };
             return Ok(new { specialties });
         }
@@ -513,6 +513,54 @@ namespace ScheduleApp.WebApi.Controllers
             }
 
             return csv.ToString();
+        }
+
+
+        /// <summary>
+        /// Obtiene el horario/schedule de un docente específico
+        /// </summary>
+        /// <param name="id">ID del docente</param>
+        /// <returns>Lista de disponibilidades horarias del docente</returns>
+        [HttpGet("{id:guid}/schedule")]
+        public async Task<IActionResult> GetTeacherSchedule(Guid id)
+        {
+            try
+            {
+                var schedule = await _teacherService.GetTeacherScheduleAsync(id);
+
+                if (schedule == null || !schedule.Any())
+                {
+                    return Ok(new
+                    {
+                        message = "El docente no tiene horarios configurados",
+                        schedule = new List<TeacherAvailabilityDto>()
+                    });
+                }
+
+                return Ok(new
+                {
+                    teacherId = id,
+                    schedule = schedule,
+                    totalBlocks = schedule.Count()
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al obtener horario del docente",
+                    detail = ex.Message,
+                    timestamp = DateTime.UtcNow
+                });
+            }
         }
     }
 }

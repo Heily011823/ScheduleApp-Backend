@@ -502,5 +502,30 @@ namespace ScheduleApp.Application.Services
                 TeachingHours = mainAvailability?.MaxTeachingHours ?? 0
             };
         }
+
+
+        /// <summary>
+        /// Obtiene el horario/schedule de un docente específico
+        /// </summary>
+        public async Task<IEnumerable<TeacherAvailabilityDto>> GetTeacherScheduleAsync(Guid id)
+        {
+            // Verificar si el docente existe
+            var teacher = await _teacherRepository.GetByIdAsync(id);
+            if (teacher == null)
+                throw new KeyNotFoundException($"No se encontró un docente con el ID '{id}'.");
+
+            // Mapear las disponibilidades a DTO
+            var schedule = teacher.Availabilities.Select(a => new TeacherAvailabilityDto
+            {
+                Id = a.Id,
+                TeacherId = a.TeacherId,
+                Day = a.Day,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime,
+                MaxTeachingHours = a.MaxTeachingHours
+            });
+
+            return schedule;
+        }
     }
 }

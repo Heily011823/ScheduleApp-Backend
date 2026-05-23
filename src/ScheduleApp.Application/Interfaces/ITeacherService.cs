@@ -122,6 +122,20 @@ namespace ScheduleApp.Application.Interfaces
         /// Cambia explícitamente el estado activo/inactivo de un docente para habilitarlo o deshabilitarlo en las asignaciones.
         /// </summary>
         Task<TeacherResponseDto?> ChangeStatusAsync(Guid id, bool isActive);
+
+
+
+        /// <summary>
+        /// Obtiene el horario/schedule de un docente específico
+        /// </summary>
+        /// <param name="id">ID del docente</param>
+        /// <returns>Lista de disponibilidades del docente</returns>
+        Task<IEnumerable<TeacherAvailabilityDto>> GetTeacherScheduleAsync(Guid id);
+
+
         Task<IEnumerable<TeacherResponseDto>> SearchAdvancedAsync(string? document, string? name, string? email, string? specialty, string? contractType, string? status);
+
+
+
     }
 }
