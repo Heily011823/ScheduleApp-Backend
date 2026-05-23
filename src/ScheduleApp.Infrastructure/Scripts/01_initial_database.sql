@@ -1,5 +1,5 @@
 -- ==========================================================================
--- SCRIPT DE CREACIÓN DE TABLAS CORREGIDO CON IsDeleted
+-- SCRIPT DE CREACIÓN DE TABLAS CORREGIDO 
 -- ==========================================================================
 
 SET XACT_ABORT ON;
