@@ -20,10 +20,11 @@ public class AppDbContext : DbContext
     public DbSet<Classroom> Classrooms { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<Role> Roles { get; set; }
-
+    
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
     public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
 
+    public DbSet<Specialty> Specialties { get; set; }
     public DbSet<AcademicProgram> AcademicPrograms { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -282,6 +283,23 @@ public class AppDbContext : DbContext
                 .IsRequired(false);
         });
 
+
+        // Configurar Specialty
+        modelBuilder.Entity<Specialty>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+        });
+
+        // Configurar relación Subject -> Specialty
+        modelBuilder.Entity<Subject>()
+            .HasOne(s => s.Specialty)
+            .WithMany(s => s.Subjects)
+            .HasForeignKey(s => s.SpecialtyId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+
         // ==========================================
         // CONFIGURACIÓN: TEACHER AVAILABILITY (Relación 1 a Muchos)
         // ==========================================
@@ -398,6 +416,47 @@ public class AppDbContext : DbContext
             entity.Property(e => e.SemesterNumber).IsRequired();
             entity.Property(e => e.MaxCredits).IsRequired();
         });
+
+
+        base.OnModelCreating(modelBuilder);
+
+        // Configuración explícita de TeacherSubject para evitar shadow property
+        modelBuilder.Entity<TeacherSubject>(entity =>
+        {
+            entity.HasKey(ts => new { ts.TeacherId, ts.SubjectId });
+
+            entity.HasOne(ts => ts.Teacher)
+                .WithMany(t => t.TeacherSubjects)
+                .HasForeignKey(ts => ts.TeacherId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ts => ts.Subject)
+                .WithMany(s => s.TeacherSubjects)
+                .HasForeignKey(ts => ts.SubjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(ts => ts.ContractType)
+                .HasMaxLength(50);
+        });
+
+        // Configuración de Specialty (nueva entidad)
+        modelBuilder.Entity<Specialty>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Icon).HasMaxLength(50);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+        });
+
+        // Configuración de Subject con Specialty
+        modelBuilder.Entity<Subject>()
+                .HasOne(s => s.Specialty)
+                .WithMany(s => s.Subjects)
+                .HasForeignKey(s => s.SpecialtyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
     }
 
 

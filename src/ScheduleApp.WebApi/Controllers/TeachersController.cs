@@ -439,41 +439,7 @@ namespace ScheduleApp.WebApi.Controllers
             }
         }
 
-        /// <summary>
-        /// Exporta docentes filtrados a CSV
-        /// </summary>
-        [HttpGet("export/csv")]
-        public async Task<IActionResult> ExportToCsv(
-            [FromQuery] string? document = null,
-            [FromQuery] string? name = null,
-            [FromQuery] string? email = null,
-            [FromQuery] string? specialty = null,
-            [FromQuery] string? contractType = null,
-            [FromQuery] string? status = null)
-        {
-            try
-            {
-                var teachers = await _teacherService.SearchAdvancedAsync(
-                    document, name, email, specialty, contractType, status);
 
-                var csvContent = GenerateCsv(teachers);
-                var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
-
-                return File(
-                    bytes,
-                    "text/csv",
-                    $"docentes_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-                );
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    message = "Error al exportar docentes.",
-                    detail = ex.Message
-                });
-            }
-        }
 
         /// <summary>
         /// Obtiene tipos de contrato disponibles (para filtros)
@@ -485,34 +451,140 @@ namespace ScheduleApp.WebApi.Controllers
             return Ok(new { contractTypes });
         }
 
+
         /// <summary>
-        /// Obtiene especialidades disponibles (para filtros)
+        /// Obtiene el horario/schedule de un docente específico
+        /// </summary>
+        /// <param name="id">ID del docente</param>
+        /// <returns>Lista de disponibilidades horarias del docente</returns>
+        [HttpGet("{id:guid}/schedule")]
+        public async Task<IActionResult> GetTeacherSchedule(Guid id)
+        {
+            try
+            {
+                var schedule = await _teacherService.GetTeacherScheduleAsync(id);
+
+                if (schedule == null || !schedule.Any())
+                {
+                    return Ok(new
+                    {
+                        message = "El docente no tiene horarios configurados",
+                        schedule = new List<TeacherAvailabilityDto>()
+                    });
+                }
+
+                return Ok(new
+                {
+                    teacherId = id,
+                    schedule = schedule,
+                    totalBlocks = schedule.Count()
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al obtener horario del docente",
+                    detail = ex.Message,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+        }
+
+
+        /// <summary>
+        /// Obtiene especialidades disponibles desde la base de datos
         /// </summary>
         [HttpGet("metadata/specialties")]
         public async Task<IActionResult> GetSpecialties()
         {
-            var specialties = new[]
+            try
             {
-                "Ética", "Cálculo Diferencial", "Inglés I", "Fundamentos de POO",
-                "Paradigmas de Lenguajes", "Ingeniería de Software II", "Bases de Datos I",
-                "Técnicas de Programación", "Programación Back End", "Cultura Política"
-            };
-            return Ok(new { specialties });
-        }
+                var specialties = await _teacherService.GetAllSpecialtiesAsync();
 
-        private string GenerateCsv(IEnumerable<TeacherResponseDto> teachers)
-        {
-            var csv = new System.Text.StringBuilder();
-            csv.AppendLine("ID,Nombre,Email,Documento,Teléfono,Especialidad,Horas,Tipo Contrato,Estado,Fecha Creación");
+                if (!specialties.Any())
+                {
+                    return Ok(new
+                    {
+                        specialties = new List<SpecialtyDto>(),
+                        message = "No hay especialidades cargadas. Use POST /api/teachers/metadata/specialties/seed para cargar datos iniciales.",
+                        hasData = false
+                    });
+                }
 
-            foreach (var t in teachers)
-            {
-                csv.AppendLine($"{t.Id},{t.FirstName} {t.LastName},{t.Email},{t.IdentityDocument}," +
-                              $"{t.PhoneNumber},{t.Specialties},{t.TeachingHours},{t.ContractType}," +
-                              $"{(t.IsActive ? "Activo" : "Inactivo")},{t.CreatedAt:yyyy-MM-dd}");
+                return Ok(new
+                {
+                    specialties = specialties,
+                    count = specialties.Count(),
+                    hasData = true
+                });
             }
-
-            return csv.ToString();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al obtener especialidades",
+                    detail = ex.Message
+                });
+            }
         }
+
+        /// <summary>
+        /// Endpoint para cargar especialidades por defecto (solo usar una vez)
+        /// </summary>
+        /*
+        [HttpPost("metadata/specialties/seed")]
+        public async Task<IActionResult> SeedSpecialties()
+        {
+
+            var existing = await _teacherService.GetAllSpecialtiesAsync();
+            if (existing.Any())
+                return BadRequest(new { message = "Las especialidades ya fueron cargadas. No se puede ejecutar el seed nuevamente." });
+
+            try
+            {
+                var defaultSpecialties = new[]
+                {
+            new { Name = "Lenguas Extranjeras", Description = "Idiomas y lingüística", DisplayOrder = 1 },
+            new { Name = "Matemáticas", Description = "Matemáticas puras y aplicadas", DisplayOrder = 2 },
+            new { Name = "Humanísticas", Description = "Ciencias humanas y sociales", DisplayOrder = 3 },
+            new { Name = "Física", Description = "Física teórica y experimental", DisplayOrder = 4 },
+            new { Name = "Ética", Description = "Ética y moral", DisplayOrder = 5 },
+            new { Name = "Arquitectura de Software", Description = "Diseño de software", DisplayOrder = 6 },
+            new { Name = "Electrónica Digital", Description = "Circuitos digitales", DisplayOrder = 7 },
+            new { Name = "Ingeniería de Software", Description = "Desarrollo de software", DisplayOrder = 8 },
+            new { Name = "Backend", Description = "Desarrollo del lado del servidor", DisplayOrder = 9 },
+            new { Name = "Frontend", Description = "Desarrollo del lado del cliente", DisplayOrder = 10 },
+            new { Name = "Ingeniería de Datos", Description = "Procesamiento de datos", DisplayOrder = 11 }
+        };
+
+                var result = await _teacherService.SeedSpecialtiesAsync(defaultSpecialties);
+
+                return Ok(new
+                {
+                    message = "Especialidades cargadas exitosamente",
+                    added = result.Added,
+                    skipped = result.Skipped,
+                    total = result.Total
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al cargar especialidades",
+                    detail = ex.Message
+                });
+            }
+        }*/
+
     }
 }

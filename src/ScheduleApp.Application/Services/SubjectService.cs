@@ -47,7 +47,6 @@ namespace ScheduleApp.Application.Services
                 Credits = dto.Credits,
                 WeeklyHours = dto.WeeklyHours,
                 IsActive = true,
-                IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -93,11 +92,12 @@ namespace ScheduleApp.Application.Services
             if (subject == null)
                 throw new Exception("Subject not found");
 
-            if (subject.IsDeleted)
+            // ✅ CORREGIDO: Cambiar IsDeleted por !IsActive
+            if (!subject.IsActive)
                 throw new Exception("The subject has already been deleted");
 
-            // ✅ Eliminación lógica
-            subject.IsDeleted = true;
+            // ✅ CORREGIDO: fl -> false
+            subject.IsActive = false;
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -176,7 +176,14 @@ namespace ScheduleApp.Application.Services
 
             foreach (var s in subjects)
             {
-                sb.AppendLine($"<tr><td>{s.Code}</td><td>{s.Name}</td><td>{s.Semester}</td><td>{s.Credits}</td><td>{s.WeeklyHours}</td><td>{(s.IsActive ? "Activo" : "Inactivo")}</td></tr>");
+                sb.AppendLine($"<tr>"
+                    + $"<td>{s.Code}</td>"
+                    + $"<td>{s.Name}</td>"
+                    + $"<td>{s.Semester}</td>"
+                    + $"<td>{s.Credits}</td>"
+                    + $"<td>{s.WeeklyHours}</td>"
+                    + $"<td>{(s.IsActive ? "Activo" : "Inactivo")}</td>"
+                    + $"</tr>");
             }
 
             sb.AppendLine("</table></body></html>");
