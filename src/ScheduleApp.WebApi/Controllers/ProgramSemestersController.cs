@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
 
 namespace ScheduleApp.WebApi.Controllers
@@ -18,6 +19,17 @@ namespace ScheduleApp.WebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> Get(Guid programId)
         {
+            var programExists = await _context.AcademicPrograms
+                .AnyAsync(p => p.Id == programId && !p.IsDeleted);
+
+            if (!programExists)
+            {
+                return NotFound(new
+                {
+                    message = $"No existe el programa con Id '{programId}'."
+                });
+            }
+
             var semesters = await _context.ProgramSemesters
                 .Where(s => s.AcademicProgramId == programId)
                 .OrderBy(s => s.SemesterNumber)
@@ -46,20 +58,16 @@ namespace ScheduleApp.WebApi.Controllers
                 });
             }
 
-            var programExists = await _context.AcademicPrograms
-                .AnyAsync(p => p.Id == programId && !p.IsDeleted);
+            var program = await _context.AcademicPrograms
+                .FirstOrDefaultAsync(p => p.Id == programId && !p.IsDeleted);
 
-            if (!programExists)
+            if (program == null)
             {
                 return NotFound(new
                 {
                     message = $"No existe el programa con Id '{programId}'."
                 });
             }
-
-            var existingSemesters = await _context.ProgramSemesters
-                .Where(s => s.AcademicProgramId == programId)
-                .ToListAsync();
 
             foreach (var item in semesters)
             {
@@ -71,6 +79,14 @@ namespace ScheduleApp.WebApi.Controllers
                     });
                 }
 
+                if (item.Semester > program.TotalSemesters)
+                {
+                    return BadRequest(new
+                    {
+                        message = $"El semestre {item.Semester} supera el total de semestres del programa."
+                    });
+                }
+
                 if (item.MaxCredits <= 0)
                 {
                     return BadRequest(new
@@ -78,20 +94,57 @@ namespace ScheduleApp.WebApi.Controllers
                         message = $"Los créditos del semestre {item.Semester} deben ser mayores a 0."
                     });
                 }
+            }
 
+            var duplicatedSemester = semesters
+                .GroupBy(s => s.Semester)
+                .FirstOrDefault(g => g.Count() > 1);
+
+            if (duplicatedSemester != null)
+            {
+                return BadRequest(new
+                {
+                    message = $"El semestre {duplicatedSemester.Key} está repetido."
+                });
+            }
+
+            var existingSemesters = await _context.ProgramSemesters
+                .Where(s => s.AcademicProgramId == programId)
+                .ToListAsync();
+
+            foreach (var item in semesters)
+            {
                 var semester = existingSemesters
                     .FirstOrDefault(s => s.SemesterNumber == item.Semester);
 
                 if (semester == null)
                 {
-                    return BadRequest(new
+                    semester = new ProgramSemester
                     {
-                        message = $"El semestre {item.Semester} no existe para este programa."
-                    });
-                }
+                        Id = Guid.NewGuid(),
+                        AcademicProgramId = programId,
+                        SemesterNumber = item.Semester,
+                        MaxCredits = item.MaxCredits,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
 
-                semester.MaxCredits = item.MaxCredits;
-                semester.UpdatedAt = DateTime.UtcNow;
+                    _context.ProgramSemesters.Add(semester);
+                }
+                else
+                {
+                    semester.MaxCredits = item.MaxCredits;
+                    semester.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            var semestersToRemove = existingSemesters
+                .Where(existing => !semesters.Any(s => s.Semester == existing.SemesterNumber))
+                .ToList();
+
+            if (semestersToRemove.Count > 0)
+            {
+                _context.ProgramSemesters.RemoveRange(semestersToRemove);
             }
 
             await _context.SaveChangesAsync();
@@ -99,7 +152,7 @@ namespace ScheduleApp.WebApi.Controllers
             return Ok(new
             {
                 message = "Créditos actualizados correctamente.",
-                programId = programId,
+                programId,
                 totalSemestersUpdated = semesters.Count
             });
         }
