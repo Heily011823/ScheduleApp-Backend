@@ -84,9 +84,16 @@ namespace ScheduleApp.Application.Services
         // ============================================================
         // OBTENER HORARIOS FILTRADOS
         // ============================================================
-        public async Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(string academicProgram, string shift, int semester)
+        public async Task<List<GeneratedScheduleEntryDto>>GetByFiltersAsync(string academicProgram,string shift,int semester,string status)
         {
-            return await _scheduleRepository.GetByFiltersAsync(academicProgram, shift, semester);
+            return await 
+            _scheduleRepository
+            .GetByFiltersAsync(
+                academicProgram,
+                shift,
+                semester,
+                status
+            );
         }
     }
 }

@@ -15,6 +15,7 @@ namespace ScheduleApp.Application.Interfaces
             string academicProgram,
             string shift,
             int semester
+            string status
         );
     }
 }
