@@ -60,4 +60,20 @@ public interface ITeacherRepository
         string? email,
         bool? isActive);
 
+
+    /// <summary>
+    /// Obtiene todas las especialidades activas
+    /// </summary>
+    Task<IEnumerable<Specialty>> GetAllSpecialtiesAsync();
+
+    /// <summary>
+    /// Verifica si existe una especialidad por nombre
+    /// </summary>
+    Task<bool> SpecialtyExistsAsync(string name);
+
+    /// <summary>
+    /// Agrega una nueva especialidad
+    /// </summary>
+    Task AddSpecialtyAsync(Specialty specialty);
+
 }

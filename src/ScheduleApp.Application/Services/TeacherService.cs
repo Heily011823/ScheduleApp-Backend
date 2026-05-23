@@ -6,6 +6,7 @@ using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 
+
 // Ruta original: src/ScheduleApp.Application/Services/TeacherService.cs
 namespace ScheduleApp.Application.Services
 {
@@ -527,5 +528,68 @@ namespace ScheduleApp.Application.Services
 
             return schedule;
         }
+
+
+        /// <summary>
+        /// Obtiene todas las especialidades activas desde la base de datos
+        /// </summary>
+        public async Task<IEnumerable<SpecialtyDto>> GetAllSpecialtiesAsync()
+        {
+            // Necesitarás implementar esto en el repositorio
+            var specialties = await _teacherRepository.GetAllSpecialtiesAsync();
+
+            return specialties.Select(s => new SpecialtyDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description,
+                Icon = s.Icon,
+                DisplayOrder = s.DisplayOrder
+            });
+        }
+
+        /// <summary>
+        /// Carga especialidades por defecto en la base de datos (solo usar una vez)
+        /// </summary>
+        public async Task<SeedResultDto> SeedSpecialtiesAsync(IEnumerable<object> defaultSpecialties)
+        {
+            var result = new SeedResultDto();
+
+            foreach (var spec in defaultSpecialties)
+            {
+                // Extraer propiedades usando reflexión
+                var name = spec.GetType().GetProperty("Name")?.GetValue(spec)?.ToString();
+                var description = spec.GetType().GetProperty("Description")?.GetValue(spec)?.ToString();
+                var displayOrder = (int)(spec.GetType().GetProperty("DisplayOrder")?.GetValue(spec) ?? 0);
+
+                if (string.IsNullOrEmpty(name)) continue;
+
+                // Verificar si ya existe
+                var exists = await _teacherRepository.SpecialtyExistsAsync(name);
+                if (exists)
+                {
+                    result.Skipped++;
+                    continue;
+                }
+
+                // Crear nueva especialidad
+                var specialty = new Specialty
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Description = description ?? string.Empty,
+                    DisplayOrder = displayOrder,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _teacherRepository.AddSpecialtyAsync(specialty);
+                result.Added++;
+            }
+
+            result.Total = result.Added + result.Skipped;
+            return result;
+        }
+
     }
 }

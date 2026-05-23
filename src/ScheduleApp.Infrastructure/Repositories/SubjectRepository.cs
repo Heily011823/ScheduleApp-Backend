@@ -22,8 +22,9 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<List<Subject>> GetActiveAsync()
     {
+        // ✅ CORREGIDO: Quitar !s.IsDeleted, usar solo IsActive
         return await _context.Subjects
-            .Where(s => s.IsActive && !s.IsDeleted) // ✅
+            .Where(s => s.IsActive)
             .ToListAsync();
     }
 
@@ -41,8 +42,9 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<Subject?> GetByCodeAsync(string code)
     {
+        // ✅ CORREGIDO: Quitar && !s.IsDeleted
         return await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Code == code && !s.IsDeleted); // ✅
+            .FirstOrDefaultAsync(s => s.Code == code && s.IsActive);
     }
 
     public async Task<(List<Subject> Items, int TotalCount)> SearchAsync(
@@ -54,8 +56,12 @@ public class SubjectRepository : ISubjectRepository
     {
         var query = _context.Subjects.AsQueryable();
 
-        // ✅ Siempre excluye eliminadas lógicamente
-        query = query.Where(s => !s.IsDeleted);
+        // ✅ CORREGIDO: Usar IsActive en lugar de IsDeleted
+        // Si no se pasa filtro de estado, mostrar solo activos por defecto
+        if (!isActive.HasValue)
+        {
+            query = query.Where(s => s.IsActive);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -76,7 +82,6 @@ public class SubjectRepository : ISubjectRepository
                 s.IsActive == isActive.Value);
         }
 
-   
         int totalCount = await query.CountAsync();
 
         var items = await query

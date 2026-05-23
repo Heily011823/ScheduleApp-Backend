@@ -136,6 +136,17 @@ namespace ScheduleApp.Application.Interfaces
         Task<IEnumerable<TeacherResponseDto>> SearchAdvancedAsync(string? document, string? name, string? email, string? specialty, string? contractType, string? status);
 
 
+        /// <summary>
+        /// Obtiene todas las especialidades activas
+        /// </summary>
+        Task<IEnumerable<SpecialtyDto>> GetAllSpecialtiesAsync();
+
+        /// <summary>
+        /// Carga especialidades por defecto en la base de datos
+        /// </summary>
+        Task<SeedResultDto> SeedSpecialtiesAsync(IEnumerable<object> defaultSpecialties);
+
+
 
     }
 }

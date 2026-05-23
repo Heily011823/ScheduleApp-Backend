@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
+using ScheduleApp.Application.DTOs;
 
 // Ruta recomendada: src/ScheduleApp.Infrastructure/Repositories/TeacherRepository.cs
 namespace ScheduleApp.Infrastructure.Repositories
@@ -199,5 +200,37 @@ namespace ScheduleApp.Infrastructure.Repositories
 
             return results;
         }
+
+
+        /// <summary>
+        /// Obtiene todas las especialidades activas
+        /// </summary>
+        public async Task<IEnumerable<Specialty>> GetAllSpecialtiesAsync()
+        {
+            return await _context.Specialties
+                .Where(s => s.IsActive)
+                .OrderBy(s => s.DisplayOrder)
+                .ThenBy(s => s.Name)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Verifica si existe una especialidad por nombre
+        /// </summary>
+        public async Task<bool> SpecialtyExistsAsync(string name)
+        {
+            return await _context.Specialties
+                .AnyAsync(s => s.Name.ToLower() == name.ToLower());
+        }
+
+        /// <summary>
+        /// Agrega una nueva especialidad
+        /// </summary>
+        public async Task AddSpecialtyAsync(Specialty specialty)
+        {
+            await _context.Specialties.AddAsync(specialty);
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

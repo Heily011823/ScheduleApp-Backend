@@ -22,4 +22,5 @@ public class Teacher
 
     // Relación Muchos a Muchos con Materias (Tabla intermedia)
     public ICollection<TeacherSubject> TeacherSubjects { get; set; } = new List<TeacherSubject>();
+
 }
