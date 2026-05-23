@@ -239,16 +239,18 @@ public class ScheduleRepository : IScheduleRepository
     public async Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
         string academicProgram,
         string shift,
-        int semester)
+        int semester,
+        string status)
     {
         return await _context.Schedules
             .Include(s => s.Subject)
             .Include(s => s.Teacher)
             .Include(s => s.Classroom)
-            .Where(s =>
-                s.AcademicProgram == academicProgram &&
-                s.Shift == shift &&
-                s.Semester == semester)
+            .Where(s => (string.IsNullOrEmpty(academicProgram)
+            || s.AcademicProgram == academicProgram) &&
+            (string.IsNullOrEmpty(shift) || s.Shift == shift) &&
+            (semester <= 0 || s.Semester == semester && (string.IsNullOrEmpty(status)
+            || s.Status == status)))
             .OrderBy(s => s.Day)
             .ThenBy(s => s.StartTime)
             .Select(s => new GeneratedScheduleEntryDto

@@ -46,7 +46,8 @@ public interface IScheduleRepository
         Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
             string academicProgram,
             string shift,
-            int semester
+            int semester,
+            string status
         );
 
 

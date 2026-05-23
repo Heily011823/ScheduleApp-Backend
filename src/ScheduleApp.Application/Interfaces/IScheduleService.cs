@@ -14,7 +14,8 @@ namespace ScheduleApp.Application.Interfaces
         Task<List<GeneratedScheduleEntryDto>> GetByFiltersAsync(
             string academicProgram,
             string shift,
-            int semester
+            int semester,
+            string status
         );
     }
 }
