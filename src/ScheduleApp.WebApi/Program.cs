@@ -94,6 +94,7 @@ builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IScheduleGenerationService, ScheduleGenerationService>();
 builder.Services.AddScoped<IScheduleService, ScheduleGenerationService>(); // Registrar IScheduleService
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
+builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 
 // =========================================================================
 // DASHBOARD

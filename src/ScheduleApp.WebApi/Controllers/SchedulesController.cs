@@ -27,6 +27,7 @@ public class SchedulesController : ControllerBase
     private readonly IScheduleGenerationService _generationService;
     private readonly IScheduleService _scheduleService;
     private readonly IPdfExportService _pdfService;
+    private readonly IExcelExportService _excelService;
 
     // Constructor único que inicializa TODOS los servicios
     public SchedulesController(
@@ -34,13 +35,14 @@ public class SchedulesController : ControllerBase
         IScheduleRepository scheduleRepository,
         IScheduleGenerationService generationService,
         IScheduleService scheduleService,
-        IPdfExportService pdfService)
+        IPdfExportService pdfService, IExcelExportService excelService)
     {
         _creditValidationService = creditValidationService;
         _scheduleRepository = scheduleRepository;
         _generationService = generationService;
         _scheduleService = scheduleService;
         _pdfService = pdfService;
+        _excelService = excelService;
     }
 
     /// <summary>
@@ -178,7 +180,7 @@ public class SchedulesController : ControllerBase
         [FromQuery] string academicProgram,
         [FromQuery] string shift,
         [FromQuery] int semester)
-            {
+        {
         try
         {
             var schedules =
@@ -220,6 +222,59 @@ public class SchedulesController : ControllerBase
                 message =
                 "Error exportando PDF",
                 detail = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("export-excel")]
+    public async Task<IActionResult> ExportExcel(
+        [FromQuery] string academicProgram,
+        [FromQuery] string shift,
+        [FromQuery] int semester)
+
+        {
+        try
+        {
+            var schedules =
+            await _scheduleService
+            .GetByFiltersAsync(
+                academicProgram,
+                shift,
+                semester
+            );
+
+            if (!schedules.Any())
+            {
+                return NotFound(
+                new
+                {
+                    message =
+                    "No existen horarios."
+                });
+            }
+
+            var excel =
+            _excelService
+            .GenerateScheduleExcel(
+                schedules
+            );
+
+            return File(
+                excel,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Horario_{semester}.xlsx"
+            );
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(
+            500,
+            new
+            {
+                message =
+                "Error exportando Excel",
+                detail =
+                ex.Message
             });
         }
     }
