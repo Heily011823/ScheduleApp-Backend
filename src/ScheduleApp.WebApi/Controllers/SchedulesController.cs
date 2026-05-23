@@ -26,18 +26,21 @@ public class SchedulesController : ControllerBase
     private readonly IScheduleRepository _scheduleRepository;
     private readonly IScheduleGenerationService _generationService;
     private readonly IScheduleService _scheduleService;
+    private readonly IPdfExportService _pdfService;
 
     // Constructor único que inicializa TODOS los servicios
     public SchedulesController(
         CreditValidationService creditValidationService,
         IScheduleRepository scheduleRepository,
         IScheduleGenerationService generationService,
-        IScheduleService scheduleService)
+        IScheduleService scheduleService,
+        IPdfExportService pdfService)
     {
         _creditValidationService = creditValidationService;
         _scheduleRepository = scheduleRepository;
         _generationService = generationService;
         _scheduleService = scheduleService;
+        _pdfService = pdfService;
     }
 
     /// <summary>
@@ -164,6 +167,58 @@ public class SchedulesController : ControllerBase
             return StatusCode(500, new
             {
                 message = "Error al consultar los horarios.",
+                detail = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("export-pdf")]
+    public async Task<IActionResult> ExportPdf(
+
+        [FromQuery] string academicProgram,
+        [FromQuery] string shift,
+        [FromQuery] int semester)
+            {
+        try
+        {
+            var schedules =
+            await _scheduleService
+            .GetByFiltersAsync(
+                academicProgram,
+                shift,
+                semester
+            );
+
+            if (!schedules.Any())
+            {
+                return NotFound(
+                new
+                {
+                    message =
+                    "No existen horarios."
+                });
+            }
+
+            var pdf =
+            _pdfService
+            .GenerateSchedulePdf(
+                schedules
+            );
+
+            return File(
+                pdf,
+                "application/pdf",
+                $"Horario_{semester}.pdf"
+            );
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(
+            500,
+            new
+            {
+                message =
+                "Error exportando PDF",
                 detail = ex.Message
             });
         }
