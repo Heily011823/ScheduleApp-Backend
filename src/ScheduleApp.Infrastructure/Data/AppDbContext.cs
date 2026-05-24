@@ -446,7 +446,6 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.Icon).HasMaxLength(50);
             entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
         });
 

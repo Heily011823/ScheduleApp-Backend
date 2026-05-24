@@ -377,6 +377,45 @@ namespace ScheduleApp.WebApi.Controllers
         }
 
         /// <summary>
+        /// Exporta docentes filtrados a CSV
+        /// </summary>
+        /// 
+        /*
+        [HttpGet("export/csv")]
+        public async Task<IActionResult> ExportToCsv(
+            [FromQuery] string? document = null,
+            [FromQuery] string? name = null,
+            [FromQuery] string? email = null,
+            [FromQuery] string? specialty = null,
+            [FromQuery] string? contractType = null,
+            [FromQuery] string? status = null)
+        {
+            try
+            {
+                var teachers = await _teacherService.SearchAdvancedAsync(
+                    document, name, email, specialty, contractType, status);
+
+                //var csvContent = GenerateCsv(teachers);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
+
+                return File(
+                    bytes,
+                    "text/csv",
+                    $"docentes_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error al exportar docentes.",
+                    detail = ex.Message
+                });
+            }
+        }
+        */
+
+        /// <summary>
         /// Activa un docente previamente desactivado
         /// </summary>
         [HttpPatch("{id:guid}/activate")]
