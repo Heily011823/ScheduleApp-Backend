@@ -19,24 +19,24 @@ namespace ScheduleApp.Application.Services
         public async Task CreateSubjectAsync(CreateSubjectDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Code))
-                throw new Exception("Code is required");
+                throw new Exception("El código es obligatorio");
 
             if (string.IsNullOrWhiteSpace(dto.Name))
-                throw new Exception("Name is required");
+                throw new Exception("El nombre es obligatorio");
 
             if (dto.Semester <= 0)
-                throw new Exception("Semester must be greater than 0");
+                throw new Exception("El semestre debe ser mayor que 0");
 
             if (dto.Credits <= 0)
-                throw new Exception("Credits must be greater than 0");
+                throw new Exception("Los créditos deben ser mayores que 0");
 
             if (dto.WeeklyHours <= 0)
-                throw new Exception("Weekly hours must be greater than 0");
+                throw new Exception("Las horas semanales deben ser mayores que 0");
 
             var existingSubject = await _subjectRepository.GetByCodeAsync(dto.Code);
 
             if (existingSubject != null)
-                throw new Exception("Subject code already exists");
+                throw new Exception("El código de la materia ya existe");
 
             var subject = new Subject
             {
@@ -60,20 +60,20 @@ namespace ScheduleApp.Application.Services
             var subject = await _subjectRepository.GetByIdAsync(id);
 
             if (subject == null)
-                throw new Exception("Subject not found");
+                throw new Exception("Materia no encontrada");
 
             // El codigo no se edita desde el formulario, no se valida aca
             if (string.IsNullOrWhiteSpace(dto.Name))
-                throw new Exception("Name is required");
+                throw new Exception("El nombre es obligatorio");
 
             if (dto.Semester <= 0)
-                throw new Exception("Semester must be greater than 0");
+                throw new Exception("El semestre debe ser mayor que 0");
 
             if (dto.Credits <= 0)
-                throw new Exception("Credits must be greater than 0");
+                throw new Exception("Los créditos deben ser mayores que 0");
 
             if (dto.WeeklyHours <= 0)
-                throw new Exception("Weekly hours must be greater than 0");
+                throw new Exception("Las horas semanales deben ser mayores que 0");
 
             subject.Name = dto.Name;
             subject.Semester = dto.Semester;
@@ -91,11 +91,12 @@ namespace ScheduleApp.Application.Services
             var subject = await _subjectRepository.GetByIdAsync(id);
 
             if (subject == null)
-                throw new Exception("Subject not found");
+                throw new Exception("Materia no encontrada");
 
             if (!subject.IsActive)
-                throw new Exception("The subject has already been deleted");
+                throw new Exception("La materia ya fue eliminada");
 
+            subject.IsActive = false;
             subject.IsDeleted = true;
             subject.UpdatedAt = DateTime.UtcNow;
 

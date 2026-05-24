@@ -23,7 +23,8 @@ public class SubjectRepository : ISubjectRepository
     // Obtiene cualquier registro, incluso uno borrado
     public async Task<Subject?> GetByIdAsyncWithoutFilter(Guid id)
     {
-        return await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+        return await _context.Subjects
+            .FirstOrDefaultAsync(s => s.Id == id);
     }
 
     public async Task<List<Subject>> GetActiveAsync()
@@ -54,10 +55,12 @@ public class SubjectRepository : ISubjectRepository
     public async Task DeleteLogicalAsync(Guid id)
     {
         var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+
         if (subject == null)
             throw new KeyNotFoundException("Materia no encontrada.");
 
         subject.IsDeleted = true;
+        subject.IsActive = false;
         subject.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -76,13 +79,23 @@ public class SubjectRepository : ISubjectRepository
         query = query.Where(s => !s.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(s => s.Name.Contains(search) || s.Code.Contains(search));
+        {
+            query = query.Where(s =>
+                s.Name.Contains(search) ||
+                s.Code.Contains(search));
+        }
 
         if (semester.HasValue)
-            query = query.Where(s => s.Semester == semester.Value);
+        {
+            query = query.Where(s =>
+                s.Semester == semester.Value);
+        }
 
         if (isActive.HasValue)
-            query = query.Where(s => s.IsActive == isActive.Value);
+        {
+            query = query.Where(s =>
+                s.IsActive == isActive.Value);
+        }
 
         int totalCount = await query.CountAsync();
 
