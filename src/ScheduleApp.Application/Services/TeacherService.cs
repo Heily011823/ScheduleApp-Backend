@@ -543,7 +543,6 @@ namespace ScheduleApp.Application.Services
                 Id = s.Id,
                 Name = s.Name,
                 Description = s.Description,
-                Icon = s.Icon,
                 DisplayOrder = s.DisplayOrder
             });
         }

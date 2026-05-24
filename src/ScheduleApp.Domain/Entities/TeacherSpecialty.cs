@@ -4,9 +4,9 @@ using System.Text;
 
 namespace ScheduleApp.Domain.Entities
 {
-    internal class TeacherSpecialty
-    {
 
+    public class TeacherSpecialty
+    {
         public Guid TeacherId { get; set; }
         public Teacher Teacher { get; set; } = null!;
 
