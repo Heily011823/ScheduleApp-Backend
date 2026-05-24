@@ -38,10 +38,9 @@ public class CreateTeacherDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>
-    /// Especialidades del docente.
-    /// Ejemplo: Matemáticas, Programación.
+    /// Lista de IDs de especialidades asignadas al docente
     /// </summary>
-    public string Specialties { get; set; } = string.Empty;
+    public List<Guid> SpecialtyIds { get; set; } = new List<Guid>();
 
     /// <summary>
     /// Cantidad de horas disponibles para dictar clases.

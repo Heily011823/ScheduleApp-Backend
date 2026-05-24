@@ -16,8 +16,11 @@ namespace ScheduleApp.Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
-        // Relación con materias
+        // Relación con materias (1 a muchos)
         public ICollection<Subject> Subjects { get; set; } = new List<Subject>();
+
+        // ✅ NUEVO: Relación con docentes (muchos a muchos a través de TeacherSpecialty)
+        public ICollection<TeacherSpecialty> TeacherSpecialties { get; set; } = new List<TeacherSpecialty>();
     }
 }
 

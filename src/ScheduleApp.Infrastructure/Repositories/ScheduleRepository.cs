@@ -102,7 +102,8 @@ public class ScheduleRepository : IScheduleRepository
         // Esto evita que se omitan materias cuando la tabla TeacherSubjects
         // todavia no esta poblada (caso comun en datos iniciales del proyecto).
         var fallbackTeachers = await _context.Teachers
-            .Include(t => t.Specialty)
+            .Include(t => t.TeacherSpecialties)
+                .ThenInclude(ts => ts.Specialty)
             .Where(t => t.IsActive)
             .ToListAsync();
 
@@ -121,9 +122,8 @@ public class ScheduleRepository : IScheduleRepository
             Teacher? teacher = null;
             if (teacherSubject?.Teacher != null)
             {
-                // Si la materia no requiere especialidad, o el docente tiene la especialidad requerida
                 if (!requiredSpecialtyId.HasValue ||
-                    teacherSubject.Teacher.SpecialtyId == requiredSpecialtyId)
+                    teacherSubject.Teacher.TeacherSpecialties.Any(ts => ts.SpecialtyId == requiredSpecialtyId))
                 {
                     teacher = teacherSubject.Teacher;
                 }
@@ -133,7 +133,7 @@ public class ScheduleRepository : IScheduleRepository
             if (teacher == null && requiredSpecialtyId.HasValue)
             {
                 teacher = fallbackTeachers
-                    .FirstOrDefault(t => t.SpecialtyId == requiredSpecialtyId);
+                    .FirstOrDefault(t => t.TeacherSpecialties.Any(ts => ts.SpecialtyId == requiredSpecialtyId));
             }
 
             // 3. Si la materia NO requiere especialidad, tomar cualquier docente de respaldo
@@ -143,7 +143,7 @@ public class ScheduleRepository : IScheduleRepository
             }
 
             if (teacher == null)
-                continue;  // No hay docente calificado para esta materia
+                continue;
 
             bool assigned = false;
 

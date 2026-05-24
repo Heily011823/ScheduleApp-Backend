@@ -23,8 +23,6 @@ public class TeacherResponseDto
     // NUEVAS PROPIEDADES
     // ======================================================
 
-    public string Specialties { get; set; } = string.Empty;
-
     public int TeachingHours { get; set; }
 
     public string ContractType { get; set; } = string.Empty;
@@ -36,4 +34,11 @@ public class TeacherResponseDto
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+
+    public List<SpecialtyDto> Specialties { get; set; } = new List<SpecialtyDto>();
+
+    // ⚠️ Obsoleto: mantener por compatibilidad, pero marcar como obsoleto
+    [Obsolete("Use Specialties instead")]
+    public string SpecialtiesString => string.Join(", ", Specialties.Select(s => s.Name));
 }

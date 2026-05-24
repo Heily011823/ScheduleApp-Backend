@@ -27,6 +27,8 @@ public class AppDbContext : DbContext
     public DbSet<Specialty> Specialties { get; set; }
     public DbSet<AcademicProgram> AcademicPrograms { get; set; }
 
+    public DbSet<TeacherSpecialty> TeacherSpecialties { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // ==========================================
@@ -455,6 +457,27 @@ public class AppDbContext : DbContext
                 .WithMany(s => s.Subjects)
                 .HasForeignKey(s => s.SpecialtyId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+
+
+        modelBuilder.Entity<TeacherSpecialty>(entity =>
+        {
+            entity.HasKey(ts => new { ts.TeacherId, ts.SpecialtyId });
+
+            entity.HasOne(ts => ts.Teacher)
+                .WithMany(t => t.TeacherSpecialties)
+                .HasForeignKey(ts => ts.TeacherId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ts => ts.Specialty)
+                .WithMany(s => s.TeacherSpecialties)
+                .HasForeignKey(ts => ts.SpecialtyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(ts => ts.AssignedAt)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
 
     }
 

@@ -311,30 +311,50 @@ namespace ScheduleApp.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // 2. NORMALIZACIÓN: Mapeamos la disponibilidad (1 a Muchos) de forma atómica
+            // 2. Disponibilidad
             teacher.Availabilities.Add(new TeacherAvailability
             {
                 Id = Guid.NewGuid(),
                 TeacherId = teacherId,
-                Day = DayOfWeek.Monday, // Por defecto asignamos días hábiles base o extendibles según requiera la lógica
-                StartTime = TimeSpan.FromHours(7),  // 07:00 AM asignado por defecto
-                EndTime = TimeSpan.FromHours(18),   // 06:00 PM asignado por defecto
-                MaxTeachingHours = dto.TeachingHours // Guardamos las horas reales numéricas de forma limpia
+                Day = DayOfWeek.Monday,
+                StartTime = TimeSpan.FromHours(7),
+                EndTime = TimeSpan.FromHours(18),
+                MaxTeachingHours = dto.TeachingHours
             });
 
-            // 3. NORMALIZACIÓN: Mapeamos la relación N:M con materias mediante la entidad intermedia
-            var (subjectsList, _) = await _subjectRepository.SearchAsync(dto.Specialties, null, true, 1, 1);
-            var subjectBaseId = subjectsList.FirstOrDefault()?.Id ?? Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-
-            teacher.TeacherSubjects.Add(new TeacherSubject
+            // 3. ✅ NUEVO: Asignar especialidades (de cero a muchas)
+            if (dto.SpecialtyIds != null && dto.SpecialtyIds.Any())
             {
-                TeacherId = teacherId,
-                SubjectId = subjectBaseId,
-                ContractType = dto.ContractType // Guardamos la especialidad/programa de forma estructurada
-            });
+                foreach (var specialtyId in dto.SpecialtyIds.Distinct())
+                {
+                    teacher.TeacherSpecialties.Add(new TeacherSpecialty
+                    {
+                        TeacherId = teacherId,
+                        SpecialtyId = specialtyId,
+                        AssignedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            // 4. Relación con materias (opcional)
+            // Nota: dto.Specialties ya no existe, si necesitas asignar materias, usa otro campo
+            // Por ahora lo comentamos o lo manejamos de otra forma
+            /*
+            if (!string.IsNullOrWhiteSpace(dto.Specialties))
+            {
+                var (subjectsList, _) = await _subjectRepository.SearchAsync(dto.Specialties, null, true, 1, 1);
+                var subjectBaseId = subjectsList.FirstOrDefault()?.Id ?? Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+                teacher.TeacherSubjects.Add(new TeacherSubject
+                {
+                    TeacherId = teacherId,
+                    SubjectId = subjectBaseId,
+                    ContractType = dto.ContractType
+                });
+            }
+            */
 
             await _teacherRepository.AddAsync(teacher);
-
             return MapToResponseDto(teacher);
         }
 
@@ -489,21 +509,21 @@ namespace ScheduleApp.Application.Services
                 IsActive = teacher.IsActive,
                 CreatedAt = teacher.CreatedAt,
                 UpdatedAt = teacher.UpdatedAt,
-                // ======================================================
-                // RELACIÓN MANY TO MANY
-                // ======================================================
+
+                // Relación con materias
                 ContractType = mainSubject?.ContractType ?? "No asignado",
-                // ======================================================
-                // ESPECIALIDAD
-                // ======================================================
-                Specialties = mainSubject?.Subject?.Name ?? "General",
-                // ======================================================
-                // HORAS
-                // ======================================================
+
+                // Horas
                 TeachingHours = mainAvailability?.MaxTeachingHours ?? 0,
 
-                SpecialtyId = teacher.SpecialtyId,
-                SpecialtyName = teacher.Specialty?.Name
+                // ✅ NUEVO: Múltiples especialidades (CORREGIDO)
+                Specialties = teacher.TeacherSpecialties?.Select(ts => new SpecialtyDto
+                {
+                    Id = ts.SpecialtyId,
+                    Name = ts.Specialty?.Name ?? string.Empty,
+                    Description = ts.Specialty?.Description ?? string.Empty,
+                    DisplayOrder = ts.Specialty?.DisplayOrder ?? 0
+                }).ToList() ?? new List<SpecialtyDto>()
             };
         }
 
