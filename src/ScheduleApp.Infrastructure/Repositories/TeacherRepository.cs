@@ -232,5 +232,8 @@ namespace ScheduleApp.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public Guid? SpecialtyId { get; set; }
+        public string? SpecialtyName { get; set; }
+
     }
 }
