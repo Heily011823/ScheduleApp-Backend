@@ -46,11 +46,9 @@ namespace ScheduleApp.Application.Services
                 Semester = dto.Semester,
                 Credits = dto.Credits,
                 WeeklyHours = dto.WeeklyHours,
-
                 IsTapsi = dto.IsTapsi,
                 IsActive = dto.IsActive,
                 IsDeleted = false,
-
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -82,6 +80,7 @@ namespace ScheduleApp.Application.Services
             subject.WeeklyHours = dto.WeeklyHours;
             subject.IsActive = dto.IsActive;
             subject.IsTapsi = dto.IsTapsi;
+            subject.IsDeleted = dto.IsDeleted; // ✅
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -147,7 +146,6 @@ namespace ScheduleApp.Application.Services
             for (int i = 0; i < subjects.Count; i++)
             {
                 var s = subjects[i];
-
                 sheet.Cell(i + 2, 1).Value = s.Code;
                 sheet.Cell(i + 2, 2).Value = s.Name;
                 sheet.Cell(i + 2, 3).Value = s.Semester;
@@ -158,7 +156,6 @@ namespace ScheduleApp.Application.Services
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
-
             return stream.ToArray();
         }
 
@@ -167,7 +164,6 @@ namespace ScheduleApp.Application.Services
             var subjects = await _subjectRepository.GetActiveAsync();
 
             var sb = new StringBuilder();
-
             sb.AppendLine("<html><body>");
             sb.AppendLine("<h1>Reporte de Materias</h1>");
             sb.AppendLine("<table border='1' cellpadding='5' cellspacing='0'>");
@@ -186,7 +182,6 @@ namespace ScheduleApp.Application.Services
             }
 
             sb.AppendLine("</table></body></html>");
-
             return Encoding.UTF8.GetBytes(sb.ToString());
         }
     }
