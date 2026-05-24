@@ -81,6 +81,7 @@ namespace ScheduleApp.Application.Services
             subject.WeeklyHours = dto.WeeklyHours;
             subject.IsActive = dto.IsActive;
             subject.IsTapsi = dto.IsTapsi;
+            subject.IsDeleted = dto.IsDeleted; // ✅
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);

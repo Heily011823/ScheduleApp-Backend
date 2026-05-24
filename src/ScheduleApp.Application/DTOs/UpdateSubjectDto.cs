@@ -18,9 +18,9 @@
 
         public bool IsActive { get; set; }
 
-        public List<CreateSubjectScheduleDto>
-            Schedules
-        { get; set; }
-                = new();
+        public bool IsDeleted { get; set; } 
+
+        public List<CreateSubjectScheduleDto> Schedules { get; set; }
+            = new();
     }
 }
