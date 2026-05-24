@@ -4,9 +4,14 @@ using System.Threading.Tasks;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Domain.Entities;
 
-// Ruta recomendada: src/ScheduleApp.Application/Interfaces/ITeacherService.cs
 namespace ScheduleApp.Application.Interfaces
 {
+
+
+    /// Autor:  Mateo Quintero 
+    /// Version: 0.1
+    /// rama: develop
+
     /// <summary>
     /// Contrato del servicio de docentes.
     /// Define las operaciones de negocio disponibles en la capa de Aplicación.
@@ -58,12 +63,14 @@ namespace ScheduleApp.Application.Interfaces
         /// <param name="name">Filtro por nombre o apellido (búsqueda parcial).</param>
         /// <param name="email">Filtro por correo electrónico (búsqueda parcial).</param>
         /// <param name="academicProgram">Filtro por programa académico/especialidad.</param>
+        /// <param name="contractType">Filtro por tipo de contrato (Tiempo Completo, Cátedra, etc).</param>
         /// <param name="status">Filtro de estado ("Activo"/"Inactivo" o "active"/"inactive").</param>
         Task<IEnumerable<TeacherResponseDto>> SearchAdvancedAsync(
             string? document,
             string? name,
             string? email,
             string? academicProgram,
+            string? contractType,
             string? status);
 
         /// <summary>
@@ -123,30 +130,11 @@ namespace ScheduleApp.Application.Interfaces
         /// </summary>
         Task<TeacherResponseDto?> ChangeStatusAsync(Guid id, bool isActive);
 
-
-
         /// <summary>
         /// Obtiene el horario/schedule de un docente específico
         /// </summary>
         /// <param name="id">ID del docente</param>
         /// <returns>Lista de disponibilidades del docente</returns>
         Task<IEnumerable<TeacherAvailabilityDto>> GetTeacherScheduleAsync(Guid id);
-
-
-        Task<IEnumerable<TeacherResponseDto>> SearchAdvancedAsync(string? document, string? name, string? email, string? specialty, string? contractType, string? status);
-
-
-        /// <summary>
-        /// Obtiene todas las especialidades activas
-        /// </summary>
-        Task<IEnumerable<SpecialtyDto>> GetAllSpecialtiesAsync();
-
-        /// <summary>
-        /// Carga especialidades por defecto en la base de datos
-        /// </summary>
-        Task<SeedResultDto> SeedSpecialtiesAsync(IEnumerable<object> defaultSpecialties);
-
-
-
     }
 }

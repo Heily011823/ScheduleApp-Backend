@@ -66,7 +66,7 @@ namespace ScheduleApp.Tests.Services
             // Assert
             await act.Should()
                 .ThrowAsync<Exception>()
-                .WithMessage("Subject code already exists");
+                .WithMessage("El código de la materia ya existe");  // ✅ Cambiado a español
         }
 
         [Fact]
@@ -189,7 +189,7 @@ namespace ScheduleApp.Tests.Services
             // Assert
             await act.Should()
                 .ThrowAsync<Exception>()
-                .WithMessage("Subject not found");
+                .WithMessage("Materia no encontrada");  // ✅ Cambiado a español
         }
 
         [Fact]

@@ -21,7 +21,8 @@ namespace ScheduleApp.Application.Interfaces
         Task<User?> GetByIdAsync(Guid id);
 
         Task<Guid?> GetRoleIdByNameAsync(string roleName);
-
+        
+        Task<Role?> GetRoleByNameAsync(string roleName);
         Task<IEnumerable<User>> SearchUsersAsync(
             string? name,
             string? role,

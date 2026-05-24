@@ -18,6 +18,10 @@ var connectionString =
         .GetConnectionString(
             "DefaultConnection");
 
+// En tu contenedor de DI (Program.cs o un archivo de extensión)
+builder.Services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
+builder.Services.AddScoped<ISpecialtyService, SpecialtyService>();
+
 var jwtSecret =
     builder.Configuration["Jwt:Secret"];
 

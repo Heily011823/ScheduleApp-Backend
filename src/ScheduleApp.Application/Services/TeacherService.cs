@@ -6,8 +6,6 @@ using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 
-
-// Ruta original: src/ScheduleApp.Application/Services/TeacherService.cs
 namespace ScheduleApp.Application.Services
 {
     /// <summary>
@@ -17,11 +15,16 @@ namespace ScheduleApp.Application.Services
     {
         private readonly ITeacherRepository _teacherRepository;
         private readonly ISubjectRepository _subjectRepository;
+        private readonly ISpecialtyService _specialtyService;
 
-        public TeacherService(ITeacherRepository teacherRepository, ISubjectRepository subjectRepository)
+        public TeacherService(
+            ITeacherRepository teacherRepository,
+            ISubjectRepository subjectRepository,
+            ISpecialtyService specialtyService)
         {
             _teacherRepository = teacherRepository;
             _subjectRepository = subjectRepository;
+            _specialtyService = specialtyService;
         }
 
         /*
@@ -41,8 +44,6 @@ namespace ScheduleApp.Application.Services
         {
             bool? isActiveFilter = null;
 
-            // CORREGIDO: Traduce de manera robusta los estados de la UI ("Activo" / "Inactivo") 
-            // o de la API ("active" / "inactive") al valor booleano que requiere el repositorio de EF Core.
             if (!string.IsNullOrEmpty(status) && !status.Equals("Estado", StringComparison.OrdinalIgnoreCase))
             {
                 if (status.Equals("active", StringComparison.OrdinalIgnoreCase) ||
@@ -57,10 +58,8 @@ namespace ScheduleApp.Application.Services
                 }
             }
 
-            // Buscamos los docentes en el repositorio aplicando los filtros base
             var teachers = await _teacherRepository.SearchAsync(name, isActiveFilter);
 
-            // Filtro por programa académico integrado mediante las tablas relacionales normalizadas
             if (!string.IsNullOrEmpty(academicProgram))
             {
                 teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
@@ -122,7 +121,6 @@ namespace ScheduleApp.Application.Services
             string? academicProgram,
             string? status)
         {
-            // Convertir status a booleano
             bool? isActiveFilter = null;
             if (!string.IsNullOrEmpty(status))
             {
@@ -134,11 +132,9 @@ namespace ScheduleApp.Application.Services
                     isActiveFilter = false;
             }
 
-            // Búsqueda en repositorio con los filtros principales
             var teachers = await _teacherRepository.SearchAdvancedAsync(
                 document, name, email, isActiveFilter);
 
-            // Filtro adicional por programa académico (si existe)
             if (!string.IsNullOrEmpty(academicProgram))
             {
                 teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
@@ -162,7 +158,6 @@ namespace ScheduleApp.Application.Services
             int page,
             int pageSize)
         {
-            // Convertir status a booleano
             bool? isActiveFilter = null;
             if (!string.IsNullOrEmpty(status))
             {
@@ -174,11 +169,9 @@ namespace ScheduleApp.Application.Services
                     isActiveFilter = false;
             }
 
-            // Búsqueda en repositorio con los filtros principales
             var teachers = await _teacherRepository.SearchAdvancedAsync(
                 document, name, email, isActiveFilter);
 
-            // Filtro adicional por programa académico (si existe)
             if (!string.IsNullOrEmpty(academicProgram))
             {
                 teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
@@ -186,18 +179,15 @@ namespace ScheduleApp.Application.Services
                     (ts.Subject != null && ts.Subject.Name.Contains(academicProgram, StringComparison.OrdinalIgnoreCase))));
             }
 
-            // Filtro por tipo de contrato
             if (!string.IsNullOrEmpty(contractType))
             {
                 teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
                     ts.ContractType.Equals(contractType, StringComparison.OrdinalIgnoreCase)));
             }
 
-            // Convertir a lista para contar y paginar
             var teacherList = teachers.ToList();
             var totalCount = teacherList.Count;
 
-            // Aplicar paginación
             var paginatedTeachers = teacherList
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -211,7 +201,6 @@ namespace ScheduleApp.Application.Services
         /// </summary>
         public async Task<IEnumerable<object>> QuickSearchAsync(string term, int limit)
         {
-            // Validar que el término tenga al menos 2 caracteres
             if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
             {
                 Console.WriteLine($"Término de búsqueda muy corto: '{term}'");
@@ -220,22 +209,19 @@ namespace ScheduleApp.Application.Services
 
             Console.WriteLine($"Buscando docentes con término: '{term}', límite: {limit}");
 
-            // Llamar al repositorio con búsqueda en documento, nombre y email
             var teachers = await _teacherRepository.SearchAdvancedAsync(
-                document: term,  // Buscar en documento
-                name: term,      // Buscar en nombre
-                email: term,     // Buscar en email
-                isActive: true); // Solo docentes activos
+                document: term,
+                name: term,
+                email: term,
+                isActive: true);
 
             Console.WriteLine($"Docentes encontrados (antes de mapeo): {teachers.Count()}");
 
-            // Mostrar los primeros 5 resultados para depuración
             foreach (var t in teachers.Take(5))
             {
                 Console.WriteLine($"- {t.FirstName} {t.LastName} | Doc: {t.IdentityDocument} | Email: {t.Email}");
             }
 
-            // Mapear resultados
             var suggestions = teachers
                 .Take(limit)
                 .Select(t => new
@@ -259,13 +245,11 @@ namespace ScheduleApp.Application.Services
             var activeTeachers = allTeachers.Where(t => t.IsActive);
             var inactiveTeachers = allTeachers.Where(t => !t.IsActive);
 
-            // Estadísticas por tipo de contrato
             var contractTypeStats = allTeachers
                 .SelectMany(t => t.TeacherSubjects)
                 .GroupBy(ts => ts.ContractType)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            // Total de horas de enseñanza
             var totalTeachingHours = allTeachers
                 .SelectMany(t => t.Availabilities)
                 .Sum(a => a.MaxTeachingHours);
@@ -296,9 +280,14 @@ namespace ScheduleApp.Application.Services
             if (existingDoc != null)
                 throw new InvalidOperationException("El documento de identidad ya está registrado.");
 
+            // ✅ NUEVO: Validar especialidades usando el servicio dedicado
+            if (dto.SpecialtyIds != null && dto.SpecialtyIds.Any())
+            {
+                await _specialtyService.ValidateSpecialtyIdsExistAsync(dto.SpecialtyIds);
+            }
+
             var teacherId = Guid.NewGuid();
 
-            // 1. Instanciamos la entidad principal de Dominio
             var teacher = new Teacher
             {
                 Id = teacherId,
@@ -311,7 +300,7 @@ namespace ScheduleApp.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // 2. Disponibilidad
+            // Disponibilidad
             teacher.Availabilities.Add(new TeacherAvailability
             {
                 Id = Guid.NewGuid(),
@@ -322,7 +311,7 @@ namespace ScheduleApp.Application.Services
                 MaxTeachingHours = dto.TeachingHours
             });
 
-            // 3. ✅ NUEVO: Asignar especialidades (de cero a muchas)
+            // ✅ NUEVO: Asignar especialidades usando el servicio
             if (dto.SpecialtyIds != null && dto.SpecialtyIds.Any())
             {
                 foreach (var specialtyId in dto.SpecialtyIds.Distinct())
@@ -336,24 +325,6 @@ namespace ScheduleApp.Application.Services
                 }
             }
 
-            // 4. Relación con materias (opcional)
-            // Nota: dto.Specialties ya no existe, si necesitas asignar materias, usa otro campo
-            // Por ahora lo comentamos o lo manejamos de otra forma
-            /*
-            if (!string.IsNullOrWhiteSpace(dto.Specialties))
-            {
-                var (subjectsList, _) = await _subjectRepository.SearchAsync(dto.Specialties, null, true, 1, 1);
-                var subjectBaseId = subjectsList.FirstOrDefault()?.Id ?? Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-
-                teacher.TeacherSubjects.Add(new TeacherSubject
-                {
-                    TeacherId = teacherId,
-                    SubjectId = subjectBaseId,
-                    ContractType = dto.ContractType
-                });
-            }
-            */
-
             await _teacherRepository.AddAsync(teacher);
             return MapToResponseDto(teacher);
         }
@@ -361,15 +332,12 @@ namespace ScheduleApp.Application.Services
         /// <summary>
         /// Actualiza la información de un docente existente validando restricciones de unicidad.
         /// </summary>
-        /// Autor: Mateo Quintero
-        /// Version: 0.1
-        /// Rama: 97-validar-documento-único-de-docente
         public async Task<TeacherResponseDto?> UpdateAsync(Guid id, UpdateTeacherDto dto)
         {
             var teacher = await _teacherRepository.GetByIdAsync(id);
             if (teacher == null) return null;
 
-            // ── Validación #97: documento único al actualizar ────────────────────
+            // Validación #97: documento único al actualizar
             if (teacher.IdentityDocument != dto.IdentityDocument.Trim())
             {
                 var existingDoc = await _teacherRepository
@@ -380,7 +348,7 @@ namespace ScheduleApp.Application.Services
                         $"Ya existe otro docente registrado con el documento '{dto.IdentityDocument}'.");
             }
 
-            // ── Validación #98: correo único al actualizar ───────────────────────
+            // Validación #98: correo único al actualizar
             if (teacher.Email != dto.Email.ToLower().Trim())
             {
                 var existingEmail = await _teacherRepository
@@ -391,7 +359,7 @@ namespace ScheduleApp.Application.Services
                         $"Ya existe otro docente registrado con el correo '{dto.Email}'.");
             }
 
-            // Actualizamos los campos directos en el contexto
+            // Actualizar campos directos
             teacher.FirstName = dto.FirstName;
             teacher.LastName = dto.LastName;
             teacher.Email = dto.Email.ToLower().Trim();
@@ -400,12 +368,12 @@ namespace ScheduleApp.Application.Services
             teacher.IsActive = dto.IsActive;
             teacher.UpdatedAt = DateTime.UtcNow;
 
-            // Actualización de la entidad de disponibilidad hija
+            // Actualizar disponibilidad
             var availability = teacher.Availabilities.FirstOrDefault();
             if (availability != null)
                 availability.MaxTeachingHours = dto.TeachingHours;
 
-            // Actualización de la relación intermedia con asignación de materias
+            // Actualizar relación con materias
             var teacherSubject = teacher.TeacherSubjects.FirstOrDefault();
             if (teacherSubject != null)
                 teacherSubject.ContractType = dto.ContractType;
@@ -422,10 +390,9 @@ namespace ScheduleApp.Application.Services
             string? name,
             string? email,
             string? academicProgram,
-            string? contractType,  // ← Agrega este parámetro
+            string? contractType,
             string? status)
         {
-            // Convertir status a booleano
             bool? isActiveFilter = null;
             if (!string.IsNullOrEmpty(status))
             {
@@ -437,11 +404,9 @@ namespace ScheduleApp.Application.Services
                     isActiveFilter = false;
             }
 
-            // Búsqueda en repositorio con los filtros principales
             var teachers = await _teacherRepository.SearchAdvancedAsync(
                 document, name, email, isActiveFilter);
 
-            // Filtro adicional por programa académico (si existe)
             if (!string.IsNullOrEmpty(academicProgram))
             {
                 teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
@@ -449,7 +414,6 @@ namespace ScheduleApp.Application.Services
                     (ts.Subject != null && ts.Subject.Name.Contains(academicProgram, StringComparison.OrdinalIgnoreCase))));
             }
 
-            // Filtro por tipo de contrato (NUEVO)
             if (!string.IsNullOrEmpty(contractType))
             {
                 teachers = teachers.Where(t => t.TeacherSubjects.Any(ts =>
@@ -458,7 +422,6 @@ namespace ScheduleApp.Application.Services
 
             return teachers.Select(t => MapToResponseDto(t));
         }
-
 
         /// <summary>
         /// Ejecuta una desactivación lógica (Soft Delete) del docente.
@@ -510,13 +473,9 @@ namespace ScheduleApp.Application.Services
                 CreatedAt = teacher.CreatedAt,
                 UpdatedAt = teacher.UpdatedAt,
 
-                // Relación con materias
                 ContractType = mainSubject?.ContractType ?? "No asignado",
-
-                // Horas
                 TeachingHours = mainAvailability?.MaxTeachingHours ?? 0,
 
-                // ✅ NUEVO: Múltiples especialidades (CORREGIDO)
                 Specialties = teacher.TeacherSpecialties?.Select(ts => new SpecialtyDto
                 {
                     Id = ts.SpecialtyId,
@@ -527,18 +486,15 @@ namespace ScheduleApp.Application.Services
             };
         }
 
-
         /// <summary>
         /// Obtiene el horario/schedule de un docente específico
         /// </summary>
         public async Task<IEnumerable<TeacherAvailabilityDto>> GetTeacherScheduleAsync(Guid id)
         {
-            // Verificar si el docente existe
             var teacher = await _teacherRepository.GetByIdAsync(id);
             if (teacher == null)
                 throw new KeyNotFoundException($"No se encontró un docente con el ID '{id}'.");
 
-            // Mapear las disponibilidades a DTO
             var schedule = teacher.Availabilities.Select(a => new TeacherAvailabilityDto
             {
                 Id = a.Id,
@@ -551,67 +507,5 @@ namespace ScheduleApp.Application.Services
 
             return schedule;
         }
-
-
-        /// <summary>
-        /// Obtiene todas las especialidades activas desde la base de datos
-        /// </summary>
-        public async Task<IEnumerable<SpecialtyDto>> GetAllSpecialtiesAsync()
-        {
-            // Necesitarás implementar esto en el repositorio
-            var specialties = await _teacherRepository.GetAllSpecialtiesAsync();
-
-            return specialties.Select(s => new SpecialtyDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                DisplayOrder = s.DisplayOrder
-            });
-        }
-
-        /// <summary>
-        /// Carga especialidades por defecto en la base de datos (solo usar una vez)
-        /// </summary>
-        public async Task<SeedResultDto> SeedSpecialtiesAsync(IEnumerable<object> defaultSpecialties)
-        {
-            var result = new SeedResultDto();
-
-            foreach (var spec in defaultSpecialties)
-            {
-                // Extraer propiedades usando reflexión
-                var name = spec.GetType().GetProperty("Name")?.GetValue(spec)?.ToString();
-                var description = spec.GetType().GetProperty("Description")?.GetValue(spec)?.ToString();
-                var displayOrder = (int)(spec.GetType().GetProperty("DisplayOrder")?.GetValue(spec) ?? 0);
-
-                if (string.IsNullOrEmpty(name)) continue;
-
-                // Verificar si ya existe
-                var exists = await _teacherRepository.SpecialtyExistsAsync(name);
-                if (exists)
-                {
-                    result.Skipped++;
-                    continue;
-                }
-
-                // Crear nueva especialidad
-                var specialty = new Specialty
-                {
-                    Id = Guid.NewGuid(),
-                    Name = name,
-                    Description = description ?? string.Empty,
-                    DisplayOrder = displayOrder,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _teacherRepository.AddSpecialtyAsync(specialty);
-                result.Added++;
-            }
-
-            result.Total = result.Added + result.Skipped;
-            return result;
-        }
-
     }
 }

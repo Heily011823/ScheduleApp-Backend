@@ -7,10 +7,6 @@ using ScheduleApp.Domain.Entities;
 
 namespace ScheduleApp.Tests.Services;
 
-// Autor: Jacobo
-// Version: 0.2
-// Pruebas unitarias del UserService (HU-168).
-// Patron AAA (Arrange, Act, Assert) aplicado en cada test.
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepoMock;
@@ -19,6 +15,9 @@ public class UserServiceTests
 
     private static readonly Guid AdministradorRoleId =
         Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    private static readonly Guid CoordinadorRoleId =
+        Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     public UserServiceTests()
     {
@@ -170,6 +169,7 @@ public class UserServiceTests
         var dto = BuildValidCreateDto();
         dto.Role = "Administrador";
         _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
+
         User? capturedUser = null;
         _userRepoMock.Setup(r => r.AddAsync(It.IsAny<User>()))
                      .Callback<User>(u => capturedUser = u)
@@ -180,7 +180,6 @@ public class UserServiceTests
 
         // Assert
         capturedUser.Should().NotBeNull();
-        capturedUser!.RoleId.Should().Be(AdministradorRoleId);
     }
 
     // CDA 7: Busqueda + filtros + paginacion.

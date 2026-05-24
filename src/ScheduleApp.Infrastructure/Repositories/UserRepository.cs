@@ -217,4 +217,10 @@ public class UserRepository : IUserRepository
 
         return role?.Id;
     }
+
+    public async Task<Role?> GetRoleByNameAsync(string roleName)
+    {
+        return await _context.Roles
+            .FirstOrDefaultAsync(r => r.Name == roleName);
+    }
 }

@@ -22,10 +22,14 @@ namespace ScheduleApp.WebApi.Controllers
     public class TeachersController : ControllerBase
     {
         private readonly ITeacherService _teacherService;
+        private readonly ISpecialtyService _specialtyService;
 
-        public TeachersController(ITeacherService teacherService)
+        public TeachersController(
+        ITeacherService teacherService,
+        ISpecialtyService specialtyService)
         {
             _teacherService = teacherService;
+            _specialtyService = specialtyService;
         }
 
         /// <summary>
@@ -547,14 +551,14 @@ namespace ScheduleApp.WebApi.Controllers
         {
             try
             {
-                var specialties = await _teacherService.GetAllSpecialtiesAsync();
+                var specialties = await _specialtyService.GetAllSpecialtiesAsync();
 
                 if (!specialties.Any())
                 {
                     return Ok(new
                     {
                         specialties = new List<SpecialtyDto>(),
-                        message = "No hay especialidades cargadas. Use POST /api/teachers/metadata/specialties/seed para cargar datos iniciales.",
+                        message = "No hay especialidades cargadas.",
                         hasData = false
                     });
                 }
@@ -577,53 +581,161 @@ namespace ScheduleApp.WebApi.Controllers
         }
 
         /// <summary>
-        /// Endpoint para cargar especialidades por defecto (solo usar una vez)
+        /// Crea una nueva especialidad
         /// </summary>
-        /*
-        [HttpPost("metadata/specialties/seed")]
-        public async Task<IActionResult> SeedSpecialties()
+        [HttpPost("metadata/specialties")]
+        public async Task<IActionResult> CreateSpecialty([FromBody] CreateSpecialtyDto dto)
         {
-
-            var existing = await _teacherService.GetAllSpecialtiesAsync();
-            if (existing.Any())
-                return BadRequest(new { message = "Las especialidades ya fueron cargadas. No se puede ejecutar el seed nuevamente." });
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                var defaultSpecialties = new[]
+                var specialty = await _specialtyService.CreateSpecialtyAsync(dto);
+                return CreatedAtAction(nameof(GetSpecialtyById), new { id = specialty.Id }, new
                 {
-            new { Name = "Lenguas Extranjeras", Description = "Idiomas y lingüística", DisplayOrder = 1 },
-            new { Name = "Matemáticas", Description = "Matemáticas puras y aplicadas", DisplayOrder = 2 },
-            new { Name = "Humanísticas", Description = "Ciencias humanas y sociales", DisplayOrder = 3 },
-            new { Name = "Física", Description = "Física teórica y experimental", DisplayOrder = 4 },
-            new { Name = "Ética", Description = "Ética y moral", DisplayOrder = 5 },
-            new { Name = "Arquitectura de Software", Description = "Diseño de software", DisplayOrder = 6 },
-            new { Name = "Electrónica Digital", Description = "Circuitos digitales", DisplayOrder = 7 },
-            new { Name = "Ingeniería de Software", Description = "Desarrollo de software", DisplayOrder = 8 },
-            new { Name = "Backend", Description = "Desarrollo del lado del servidor", DisplayOrder = 9 },
-            new { Name = "Frontend", Description = "Desarrollo del lado del cliente", DisplayOrder = 10 },
-            new { Name = "Ingeniería de Datos", Description = "Procesamiento de datos", DisplayOrder = 11 }
-        };
-
-                var result = await _teacherService.SeedSpecialtiesAsync(defaultSpecialties);
-
-                return Ok(new
-                {
-                    message = "Especialidades cargadas exitosamente",
-                    added = result.Added,
-                    skipped = result.Skipped,
-                    total = result.Total
+                    message = "Especialidad creada exitosamente",
+                    specialty = specialty
                 });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
+                return StatusCode(500, new { message = "Error al crear especialidad", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene una especialidad por su ID
+        /// </summary>
+        [HttpGet("metadata/specialties/{id:guid}")]
+        public async Task<IActionResult> GetSpecialtyById(Guid id)
+        {
+            try
+            {
+                var specialty = await _specialtyService.GetSpecialtyByIdAsync(id);
+                if (specialty == null)
+                    return NotFound(new { message = $"No se encontró la especialidad con ID '{id}'." });
+
+                return Ok(specialty);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al obtener especialidad", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Actualiza una especialidad existente
+        /// </summary>
+        [HttpPut("metadata/specialties/{id:guid}")]
+        public async Task<IActionResult> UpdateSpecialty(Guid id, [FromBody] UpdateSpecialtyDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var specialty = await _specialtyService.UpdateSpecialtyAsync(id, dto);
+                if (specialty == null)
+                    return NotFound(new { message = $"No se encontró la especialidad con ID '{id}'." });
+
+                return Ok(new
                 {
-                    message = "Error al cargar especialidades",
-                    detail = ex.Message
+                    message = "Especialidad actualizada exitosamente",
+                    specialty = specialty
                 });
             }
-        }*/
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al actualizar especialidad", detail = ex.Message });
+            }
+        }
 
+        /// <summary>
+        /// Elimina (desactiva) una especialidad
+        /// </summary>
+        [HttpDelete("metadata/specialties/{id:guid}")]
+        public async Task<IActionResult> DeleteSpecialty(Guid id)
+        {
+            try
+            {
+                var deleted = await _specialtyService.DeleteSpecialtyAsync(id);
+                if (!deleted)
+                    return NotFound(new { message = $"No se encontró la especialidad con ID '{id}'." });
+
+                return Ok(new
+                {
+                    message = "Especialidad desactivada exitosamente",
+                    specialtyId = id,
+                    status = "inactive"
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al eliminar especialidad", detail = ex.Message });
+            }
+        }
     }
+
+    /// <summary>
+    /// Endpoint para cargar especialidades por defecto (solo usar una vez)
+    /// </summary>
+    /*
+    [HttpPost("metadata/specialties/seed")]
+    public async Task<IActionResult> SeedSpecialties()
+    {
+
+        var existing = await _teacherService.GetAllSpecialtiesAsync();
+        if (existing.Any())
+            return BadRequest(new { message = "Las especialidades ya fueron cargadas. No se puede ejecutar el seed nuevamente." });
+
+        try
+        {
+            var defaultSpecialties = new[]
+            {
+        new { Name = "Lenguas Extranjeras", Description = "Idiomas y lingüística", DisplayOrder = 1 },
+        new { Name = "Matemáticas", Description = "Matemáticas puras y aplicadas", DisplayOrder = 2 },
+        new { Name = "Humanísticas", Description = "Ciencias humanas y sociales", DisplayOrder = 3 },
+        new { Name = "Física", Description = "Física teórica y experimental", DisplayOrder = 4 },
+        new { Name = "Ética", Description = "Ética y moral", DisplayOrder = 5 },
+        new { Name = "Arquitectura de Software", Description = "Diseño de software", DisplayOrder = 6 },
+        new { Name = "Electrónica Digital", Description = "Circuitos digitales", DisplayOrder = 7 },
+        new { Name = "Ingeniería de Software", Description = "Desarrollo de software", DisplayOrder = 8 },
+        new { Name = "Backend", Description = "Desarrollo del lado del servidor", DisplayOrder = 9 },
+        new { Name = "Frontend", Description = "Desarrollo del lado del cliente", DisplayOrder = 10 },
+        new { Name = "Ingeniería de Datos", Description = "Procesamiento de datos", DisplayOrder = 11 }
+    };
+
+            var result = await _teacherService.SeedSpecialtiesAsync(defaultSpecialties);
+
+            return Ok(new
+            {
+                message = "Especialidades cargadas exitosamente",
+                added = result.Added,
+                skipped = result.Skipped,
+                total = result.Total
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "Error al cargar especialidades",
+                detail = ex.Message
+            });
+        }
+    }*/
+
 }
