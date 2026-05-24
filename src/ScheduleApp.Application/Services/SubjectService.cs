@@ -19,24 +19,24 @@ namespace ScheduleApp.Application.Services
         public async Task CreateSubjectAsync(CreateSubjectDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Code))
-                throw new Exception("Code is required");
+                throw new Exception("El código es obligatorio");
 
             if (string.IsNullOrWhiteSpace(dto.Name))
-                throw new Exception("Name is required");
+                throw new Exception("El nombre es obligatorio");
 
             if (dto.Semester <= 0)
-                throw new Exception("Semester must be greater than 0");
+                throw new Exception("El semestre debe ser mayor que 0");
 
             if (dto.Credits <= 0)
-                throw new Exception("Credits must be greater than 0");
+                throw new Exception("Los créditos deben ser mayores que 0");
 
             if (dto.WeeklyHours <= 0)
-                throw new Exception("Weekly hours must be greater than 0");
+                throw new Exception("Las horas semanales deben ser mayores que 0");
 
             var existingSubject = await _subjectRepository.GetByCodeAsync(dto.Code);
 
             if (existingSubject != null)
-                throw new Exception("Subject code already exists");
+                throw new Exception("El código de la materia ya existe");
 
             var subject = new Subject
             {
@@ -46,13 +46,11 @@ namespace ScheduleApp.Application.Services
                 Semester = dto.Semester,
                 Credits = dto.Credits,
                 WeeklyHours = dto.WeeklyHours,
-<<<<<<< Updated upstream
-                IsActive = true,
-=======
+
                 IsTapsi = dto.IsTapsi,
                 IsActive = dto.IsActive,
                 IsDeleted = false,
->>>>>>> Stashed changes
+
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -64,21 +62,19 @@ namespace ScheduleApp.Application.Services
             var subject = await _subjectRepository.GetByIdAsync(id);
 
             if (subject == null)
-                throw new Exception("Subject not found");
+                throw new Exception("Materia no encontrada");
 
-            // QUITAMOS la validación de Code en Update
-            // porque el código no se edita desde el formulario
             if (string.IsNullOrWhiteSpace(dto.Name))
-                throw new Exception("Name is required");
+                throw new Exception("El nombre es obligatorio");
 
             if (dto.Semester <= 0)
-                throw new Exception("Semester must be greater than 0");
+                throw new Exception("El semestre debe ser mayor que 0");
 
             if (dto.Credits <= 0)
-                throw new Exception("Credits must be greater than 0");
+                throw new Exception("Los créditos deben ser mayores que 0");
 
             if (dto.WeeklyHours <= 0)
-                throw new Exception("Weekly hours must be greater than 0");
+                throw new Exception("Las horas semanales deben ser mayores que 0");
 
             subject.Name = dto.Name;
             subject.Semester = dto.Semester;
@@ -96,18 +92,13 @@ namespace ScheduleApp.Application.Services
             var subject = await _subjectRepository.GetByIdAsync(id);
 
             if (subject == null)
-                throw new Exception("Subject not found");
+                throw new Exception("Materia no encontrada");
 
-            // ✅ CORREGIDO: Cambiar IsDeleted por !IsActive
             if (!subject.IsActive)
-                throw new Exception("The subject has already been deleted");
+                throw new Exception("La materia ya fue eliminada");
 
-<<<<<<< Updated upstream
-            // ✅ CORREGIDO: fl -> false
             subject.IsActive = false;
-=======
             subject.IsDeleted = true;
->>>>>>> Stashed changes
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -156,6 +147,7 @@ namespace ScheduleApp.Application.Services
             for (int i = 0; i < subjects.Count; i++)
             {
                 var s = subjects[i];
+
                 sheet.Cell(i + 2, 1).Value = s.Code;
                 sheet.Cell(i + 2, 2).Value = s.Name;
                 sheet.Cell(i + 2, 3).Value = s.Semester;
@@ -166,6 +158,7 @@ namespace ScheduleApp.Application.Services
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
+
             return stream.ToArray();
         }
 
@@ -174,6 +167,7 @@ namespace ScheduleApp.Application.Services
             var subjects = await _subjectRepository.GetActiveAsync();
 
             var sb = new StringBuilder();
+
             sb.AppendLine("<html><body>");
             sb.AppendLine("<h1>Reporte de Materias</h1>");
             sb.AppendLine("<table border='1' cellpadding='5' cellspacing='0'>");
@@ -192,6 +186,7 @@ namespace ScheduleApp.Application.Services
             }
 
             sb.AppendLine("</table></body></html>");
+
             return Encoding.UTF8.GetBytes(sb.ToString());
         }
     }
