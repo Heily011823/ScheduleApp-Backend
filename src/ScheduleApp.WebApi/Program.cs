@@ -10,154 +10,272 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Variables de configuración
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var jwtSecret = builder.Configuration["Jwt:Secret"];
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtAudience = builder.Configuration["Jwt:Audience"];
+// ======================================================
+// CONFIGURACIÓN
+// ======================================================
+var connectionString =
+    builder.Configuration
+        .GetConnectionString(
+            "DefaultConnection");
 
-// Validaciones de seguridad
+var jwtSecret =
+    builder.Configuration["Jwt:Secret"];
+
+var jwtIssuer =
+    builder.Configuration["Jwt:Issuer"];
+
+var jwtAudience =
+    builder.Configuration["Jwt:Audience"];
+
+// ======================================================
+// VALIDACIONES
+// ======================================================
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Falta la cadena de conexion 'DefaultConnection' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta la cadena de conexión.");
+}
+
 if (string.IsNullOrWhiteSpace(jwtSecret))
-    throw new InvalidOperationException("Falta la variable 'Jwt:Secret' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta Jwt:Secret.");
+}
+
 if (string.IsNullOrWhiteSpace(jwtIssuer))
-    throw new InvalidOperationException("Falta la variable 'Jwt:Issuer' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta Jwt:Issuer.");
+}
+
 if (string.IsNullOrWhiteSpace(jwtAudience))
-    throw new InvalidOperationException("Falta la variable 'Jwt:Audience' en el appsettings.");
+{
+    throw new InvalidOperationException(
+        "Falta Jwt:Audience.");
+}
 
-// =========================================================================
-// REGISTRO DE SERVICIOS
-// =========================================================================
-
-// DbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString)
+// ======================================================
+// DB CONTEXT
+// ======================================================
+builder.Services.AddDbContext<AppDbContext>(
+    options =>
+        options.UseSqlServer(connectionString)
 );
 
-// Controladores
+// ======================================================
+// CONTROLADORES
+// ======================================================
 builder.Services.AddControllers();
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new() { Title = "ScheduleApp API", Version = "v1" });
+    options.SwaggerDoc(
+        "v1",
+        new()
+        {
+            Title = "ScheduleApp API",
+            Version = "v1"
+        });
 });
 
-// =========================================================================
-// MÓDULO DE AULAS
-// =========================================================================
-builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
-builder.Services.AddScoped<IClassroomService, ClassroomService>();
-builder.Services.AddScoped<IClassroomAvailabilityService, AvailabilityService>();
+// ======================================================
+// AULAS
+// ======================================================
+builder.Services.AddScoped<
+    IClassroomRepository,
+    ClassroomRepository>();
 
-// =========================================================================
-// MÓDULO DE PROGRAMAS / SEMESTRES
-// =========================================================================
-builder.Services.AddScoped<IProgramSemesterRepository, ProgramSemesterRepository>();
-builder.Services.AddScoped<ProgramSemesterService>();
+builder.Services.AddScoped<
+    IClassroomService,
+    ClassroomService>();
 
-// =========================================================================
-// MÓDULO DE DOCENTES
-// =========================================================================
-builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
-builder.Services.AddScoped<ITeacherService, TeacherService>();
+builder.Services.AddScoped<
+    IClassroomAvailabilityService,
+    AvailabilityService>();
 
-// =========================================================================
-// REGLAS TAPSI
-// =========================================================================
-builder.Services.AddScoped<ITapsiRuleRepository, TapsiRuleRepository>();
-builder.Services.AddScoped<TapsiService>();
+// ======================================================
+// PROGRAMAS / SEMESTRES
+// ======================================================
+builder.Services.AddScoped<
+    IProgramSemesterRepository,
+    ProgramSemesterRepository>();
 
-// =========================================================================
-// MÓDULO DE USUARIOS Y AUTENTICACIÓN
-// =========================================================================
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IJwtService>(provider => new JwtService(jwtSecret, jwtIssuer, jwtAudience));
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<
+    ProgramSemesterService>();
 
-// =========================================================================
-// MÓDULO DE MATERIAS Y ASIGNACIONES
-// =========================================================================
-builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
-builder.Services.AddScoped<ISubjectService, SubjectService>();
-builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
-builder.Services.AddScoped<IAssignmentService, AssignmentService>();
+// ======================================================
+// DOCENTES
+// ======================================================
+builder.Services.AddScoped<
+    ITeacherRepository,
+    TeacherRepository>();
 
-// =========================================================================
-// MÓDULO DE HORARIOS
-// =========================================================================
-builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
-builder.Services.AddScoped<IScheduleGenerationService, ScheduleGenerationService>();
-builder.Services.AddScoped<IScheduleService, ScheduleGenerationService>(); // Registrar IScheduleService
-builder.Services.AddScoped<IPdfExportService, PdfExportService>();
-builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
+builder.Services.AddScoped<
+    ITeacherService,
+    TeacherService>();
 
-// =========================================================================
+// ======================================================
+// TAPSI
+// ======================================================
+builder.Services.AddScoped<
+    ITapsiRuleRepository,
+    TapsiRuleRepository>();
+
+builder.Services.AddScoped<
+    TapsiService>();
+
+// ======================================================
+// USUARIOS
+// ======================================================
+builder.Services.AddScoped<
+    IUserRepository,
+    UserRepository>();
+
+builder.Services.AddScoped<
+    IUserService,
+    UserService>();
+
+builder.Services.AddScoped<IJwtService>(
+    provider =>
+        new JwtService(
+            jwtSecret,
+            jwtIssuer,
+            jwtAudience));
+
+builder.Services.AddScoped<
+    IPasswordHasher,
+    PasswordHasherService>();
+
+builder.Services.AddScoped<
+    AuthService>();
+
+// ======================================================
+// MATERIAS
+// ======================================================
+builder.Services.AddScoped<
+    ISubjectRepository,
+    SubjectRepository>();
+
+builder.Services.AddScoped<
+    ISubjectService,
+    SubjectService>();
+
+// ======================================================
+// RESTRICCIONES DE MATERIAS
+// ======================================================
+builder.Services.AddScoped<
+    ISubjectRestrictionRepository,
+    SubjectRestrictionRepository>();
+
+builder.Services.AddScoped<
+    ISubjectRestrictionService,
+    SubjectRestrictionService>();
+
+// ======================================================
+// ASIGNACIONES
+// ======================================================
+builder.Services.AddScoped<
+    IAssignmentRepository,
+    AssignmentRepository>();
+
+builder.Services.AddScoped<
+    IAssignmentService,
+    AssignmentService>();
+
+// ======================================================
+// HORARIOS
+// ======================================================
+builder.Services.AddScoped<
+    IScheduleRepository,
+    ScheduleRepository>();
+
+builder.Services.AddScoped<
+    IScheduleGenerationService,
+    ScheduleGenerationService>();
+
+builder.Services.AddScoped<
+    IScheduleService,
+    ScheduleGenerationService>();
+
+// ======================================================
+// EXPORTACIONES
+// ======================================================
+builder.Services.AddScoped<
+    IPdfExportService,
+    PdfExportService>();
+
+builder.Services.AddScoped<
+    IExcelExportService,
+    ExcelExportService>();
+
+// ======================================================
 // DASHBOARD
-// =========================================================================
-builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
-builder.Services.AddScoped<DashboardService>();
+// ======================================================
+builder.Services.AddScoped<
+    IDashboardRepository,
+    DashboardRepository>();
 
-// =========================================================================
-// AUTENTICACIÓN JWT
-// =========================================================================
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddScoped<
+    DashboardService>();
+
+// ======================================================
+// VALIDACIÓN DE CRÉDITOS
+// ======================================================
+builder.Services.AddScoped<
+    CreditValidationService>();
+
+// ======================================================
+// JWT
+// ======================================================
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            ClockSkew = TimeSpan.Zero
-        };
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSecret)),
+
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwtAudience,
+
+                ClockSkew = TimeSpan.Zero
+            };
     });
 
-
-// Módulo de Usuarios y Autenticación (Auth)
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IJwtService>(provider => new JwtService(jwtSecret, jwtIssuer, jwtAudience));
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
-builder.Services.AddScoped<AuthService>();
-
-// Módulo de Horarios con Validación de Créditos
-builder.Services.AddScoped<IProgramSemesterRepository, ProgramSemesterRepository>();
-builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
-builder.Services.AddScoped<CreditValidationService>();
-
-
-// Módulo de Materias y Asignaciones (Soportan Paginación Eficiente)
-builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
-builder.Services.AddScoped<ISubjectService, SubjectService>();
-builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
-builder.Services.AddScoped<IAssignmentService, AssignmentService>();
-
+// ======================================================
+// BUILD
+// ======================================================
 var app = builder.Build();
 
-
-
-
-
-// =========================================================================
+// ======================================================
 // PIPELINE HTTP
-// =========================================================================
+// ======================================================
 app.UseSwagger();
+
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "ScheduleApp API V1");
+    options.SwaggerEndpoint(
+        "/swagger/v1/swagger.json",
+        "ScheduleApp API V1");
+
     options.RoutePrefix = "swagger";
 });
 
 app.UseAuthentication();
+
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

@@ -19,10 +19,10 @@ namespace ScheduleApp.WebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> Get(Guid programId)
         {
-            var programExists = await _context.AcademicPrograms
-                .AnyAsync(p => p.Id == programId && !p.IsDeleted);
+            var program = await _context.AcademicPrograms
+                .FirstOrDefaultAsync(p => p.Id == programId && !p.IsDeleted);
 
-            if (!programExists)
+            if (program == null)
             {
                 return NotFound(new
                 {
@@ -69,6 +69,14 @@ namespace ScheduleApp.WebApi.Controllers
                 });
             }
 
+            if (semesters.Count != program.TotalSemesters)
+            {
+                return BadRequest(new
+                {
+                    message = $"Debe configurar exactamente {program.TotalSemesters} semestre(s) para este programa."
+                });
+            }
+
             foreach (var item in semesters)
             {
                 if (item.Semester <= 0)
@@ -87,11 +95,11 @@ namespace ScheduleApp.WebApi.Controllers
                     });
                 }
 
-                if (item.MaxCredits <= 0)
+                if (item.MaxCredits <= 6)
                 {
                     return BadRequest(new
                     {
-                        message = $"Los créditos del semestre {item.Semester} deben ser mayores a 0."
+                        message = $"Los créditos del semestre {item.Semester} deben ser mayores a 6."
                     });
                 }
             }
@@ -105,6 +113,19 @@ namespace ScheduleApp.WebApi.Controllers
                 return BadRequest(new
                 {
                     message = $"El semestre {duplicatedSemester.Key} está repetido."
+                });
+            }
+
+            var expectedSemesters = Enumerable.Range(1, program.TotalSemesters).ToList();
+
+            var missingSemester = expectedSemesters
+                .FirstOrDefault(number => !semesters.Any(s => s.Semester == number));
+
+            if (missingSemester > 0)
+            {
+                return BadRequest(new
+                {
+                    message = $"Falta configurar el semestre {missingSemester}."
                 });
             }
 

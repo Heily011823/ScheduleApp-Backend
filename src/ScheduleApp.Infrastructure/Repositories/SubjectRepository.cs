@@ -16,15 +16,21 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<Subject?> GetByIdAsync(Guid id)
     {
+        // Solo retorna las materias no borradas
+        return await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id && !s.IsDeleted);
+    }
+
+    // Obtiene cualquier registro, incluso uno borrado
+    public async Task<Subject?> GetByIdAsyncWithoutFilter(Guid id)
+    {
         return await _context.Subjects
             .FirstOrDefaultAsync(s => s.Id == id);
     }
 
     public async Task<List<Subject>> GetActiveAsync()
     {
-        // ✅ CORREGIDO: Quitar !s.IsDeleted, usar solo IsActive
         return await _context.Subjects
-            .Where(s => s.IsActive)
+            .Where(s => s.IsActive && !s.IsDeleted)
             .ToListAsync();
     }
 
@@ -42,9 +48,22 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<Subject?> GetByCodeAsync(string code)
     {
-        // ✅ CORREGIDO: Quitar && !s.IsDeleted
         return await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Code == code && s.IsActive);
+            .FirstOrDefaultAsync(s => s.Code == code && !s.IsDeleted);
+    }
+
+    public async Task DeleteLogicalAsync(Guid id)
+    {
+        var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+
+        if (subject == null)
+            throw new KeyNotFoundException("Materia no encontrada.");
+
+        subject.IsDeleted = true;
+        subject.IsActive = false;
+        subject.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
     }
 
     public async Task<(List<Subject> Items, int TotalCount)> SearchAsync(
@@ -56,12 +75,8 @@ public class SubjectRepository : ISubjectRepository
     {
         var query = _context.Subjects.AsQueryable();
 
-        // ✅ CORREGIDO: Usar IsActive en lugar de IsDeleted
-        // Si no se pasa filtro de estado, mostrar solo activos por defecto
-        if (!isActive.HasValue)
-        {
-            query = query.Where(s => s.IsActive);
-        }
+        // Nunca mostrar materias borradas
+        query = query.Where(s => !s.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(search))
         {

@@ -24,7 +24,8 @@ namespace ScheduleApp.Infrastructure.Repositories
 
                 Schedules = _context.Schedules.Count(),
 
-                Programs = _context.AcademicPrograms.Count(),
+                Programs = _context.AcademicPrograms
+                    .Count(p => !p.IsDeleted),
 
                 Classrooms = _context.Classrooms.Count(),
 

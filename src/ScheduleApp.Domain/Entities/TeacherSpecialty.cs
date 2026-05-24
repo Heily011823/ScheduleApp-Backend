@@ -18,3 +18,6 @@ public class TeacherSpecialty
 
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
 }
+
+
+

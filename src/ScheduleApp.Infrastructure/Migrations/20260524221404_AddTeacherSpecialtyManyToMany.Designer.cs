@@ -12,8 +12,8 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260524161314_AddSpecialtyIdToTeacherClean")]
-    partial class AddSpecialtyIdToTeacherClean
+    [Migration("20260524221404_AddTeacherSpecialtyManyToMany")]
+    partial class AddTeacherSpecialtyManyToMany
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -256,6 +256,9 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.Property<Guid>("SubjectId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SubjectId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("TeacherId")
                         .HasColumnType("uniqueidentifier");
 
@@ -267,6 +270,8 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.HasIndex("ClassroomId");
 
                     b.HasIndex("SubjectId");
+
+                    b.HasIndex("SubjectId1");
 
                     b.HasIndex("TeacherId");
 
@@ -333,6 +338,9 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsTapsi")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -363,6 +371,69 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.HasIndex("SpecialtyId");
 
                     b.ToTable("Subjects", (string)null);
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.SubjectRestriction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("RestrictionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.ToTable("SubjectRestrictions", (string)null);
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.SubjectSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DayOfWeek")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<TimeSpan>("EndHour")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("StartHour")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.ToTable("SubjectSchedules", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.TapsiRule", b =>
@@ -516,6 +587,26 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.ToTable("TeacherAvailabilities", (string)null);
                 });
 
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.TeacherSpecialty", b =>
+                {
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SpecialtyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.HasKey("TeacherId", "SpecialtyId");
+
+                    b.HasIndex("SpecialtyId");
+
+                    b.ToTable("TeacherSpecialties");
+                });
+
             modelBuilder.Entity("ScheduleApp.Domain.Entities.TeacherSubject", b =>
                 {
                     b.Property<Guid>("TeacherId")
@@ -619,6 +710,10 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ScheduleApp.Domain.Entities.Subject", null)
+                        .WithMany("Schedules")
+                        .HasForeignKey("SubjectId1");
+
                     b.HasOne("ScheduleApp.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
@@ -642,6 +737,28 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.Navigation("Specialty");
                 });
 
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.SubjectRestriction", b =>
+                {
+                    b.HasOne("ScheduleApp.Domain.Entities.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.SubjectSchedule", b =>
+                {
+                    b.HasOne("ScheduleApp.Domain.Entities.Subject", "Subject")
+                        .WithMany("SubjectSchedules")
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subject");
+                });
+
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Teacher", b =>
                 {
                     b.HasOne("ScheduleApp.Domain.Entities.Specialty", "Specialty")
@@ -658,6 +775,25 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Teacher");
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.TeacherSpecialty", b =>
+                {
+                    b.HasOne("ScheduleApp.Domain.Entities.Specialty", "Specialty")
+                        .WithMany("TeacherSpecialties")
+                        .HasForeignKey("SpecialtyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ScheduleApp.Domain.Entities.Teacher", "Teacher")
+                        .WithMany("TeacherSpecialties")
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Specialty");
 
                     b.Navigation("Teacher");
                 });
@@ -700,16 +836,24 @@ namespace ScheduleApp.Infrastructure.Migrations
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Specialty", b =>
                 {
                     b.Navigation("Subjects");
+
+                    b.Navigation("TeacherSpecialties");
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Subject", b =>
                 {
+                    b.Navigation("Schedules");
+
+                    b.Navigation("SubjectSchedules");
+
                     b.Navigation("TeacherSubjects");
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Teacher", b =>
                 {
                     b.Navigation("Availabilities");
+
+                    b.Navigation("TeacherSpecialties");
 
                     b.Navigation("TeacherSubjects");
                 });

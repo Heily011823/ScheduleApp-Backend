@@ -9,7 +9,6 @@ namespace ScheduleApp.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
 
-
         public UserService(
             IUserRepository userRepository,
             IPasswordHasher passwordHasher)
@@ -20,7 +19,9 @@ namespace ScheduleApp.Application.Services
 
         public async Task<IEnumerable<User>> GetUsersAsync()
         {
-            return await _userRepository.SearchUsersAsync(null, null, null);
+            var users = await _userRepository.SearchUsersAsync(null, null, null);
+
+            return users.Where(u => !u.IsDeleted);
         }
 
         public async Task<IEnumerable<User>> SearchUsersAsync(
@@ -28,22 +29,23 @@ namespace ScheduleApp.Application.Services
             string? role,
             bool? isActive)
         {
-            return await _userRepository.SearchUsersAsync(name, role, isActive);
+            var users = await _userRepository.SearchUsersAsync(name, role, isActive);
+
+            return users.Where(u => !u.IsDeleted);
         }
 
-
-        // Detalle de usuario por Id (HU-58). Devuelve null si no existe o esta eliminado.
         public async Task<UserResponseDto?> GetUserByIdAsync(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
 
-            if (user == null)
+            if (user == null || user.IsDeleted)
+            {
                 return null;
+            }
 
             return MapToResponseDto(user);
         }
 
-        // Paginacion con filtros (HU-58).
         public async Task<PagedResultDto<UserResponseDto>> GetPagedUsersAsync(
             string? name,
             string? role,
@@ -54,7 +56,13 @@ namespace ScheduleApp.Application.Services
             var (items, totalCount) = await _userRepository.GetPagedAsync(
                 name, role, isActive, page, pageSize);
 
-            var dtos = items.Select(MapToResponseDto).ToList();
+            var activeItems = items
+                .Where(u => !u.IsDeleted)
+                .ToList();
+
+            var dtos = activeItems
+                .Select(MapToResponseDto)
+                .ToList();
 
             return new PagedResultDto<UserResponseDto>
             {
@@ -64,34 +72,43 @@ namespace ScheduleApp.Application.Services
                 TotalCount = totalCount
             };
         }
+
         public async Task<UserResponseDto> CreateUserAsync(CreateUserDto dto)
         {
             var normalizedEmail = dto.Email.ToLower().Trim();
             var trimmedDoc = dto.IdentityDocument.Trim();
             var trimmedUsername = dto.Username.Trim();
 
-            // 1. Resolver rol primero
             var roleId = await _userRepository.GetRoleIdByNameAsync(dto.Role.Trim());
-            if (roleId == null)
-                throw new ArgumentException($"El rol '{dto.Role}' no existe.");
 
-            // 2. Email duplicado
+            if (roleId == null)
+            {
+                throw new ArgumentException($"El rol '{dto.Role}' no existe.");
+            }
+
             var existingByEmail = await _userRepository.GetByEmailIncludingDeletedAsync(normalizedEmail);
+
             if (existingByEmail != null)
+            {
                 throw new InvalidOperationException(
                     $"Ya existe un usuario registrado con el email '{normalizedEmail}'.");
+            }
 
-            // 3. Documento duplicado
             var existingByDoc = await _userRepository.GetByIdentityDocumentAsync(trimmedDoc);
+
             if (existingByDoc != null)
+            {
                 throw new InvalidOperationException(
                     $"Ya existe un usuario registrado con el documento '{trimmedDoc}'.");
+            }
 
-            // 4. Username duplicado
             var existingByUsername = await _userRepository.GetByUsernameAsync(trimmedUsername);
+
             if (existingByUsername != null)
+            {
                 throw new InvalidOperationException(
                     $"Ya existe un usuario registrado con el username '{trimmedUsername}'.");
+            }
 
             var user = new User
             {
@@ -108,43 +125,61 @@ namespace ScheduleApp.Application.Services
             };
 
             await _userRepository.AddAsync(user);
+
             return MapToResponseDto(user);
         }
 
         public async Task<UserResponseDto?> UpdateUserAsync(Guid id, UpdateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return null;
+
+            if (user == null || user.IsDeleted)
+            {
+                return null;
+            }
 
             var normalizedEmail = dto.Email.ToLower().Trim();
             var trimmedDoc = dto.IdentityDocument.Trim();
             var trimmedUsername = dto.Username.Trim();
 
-            // Email
             if (user.Email != normalizedEmail)
             {
                 var existing = await _userRepository.GetByEmailIncludingDeletedAsync(normalizedEmail);
+
                 if (existing != null && existing.Id != id)
+                {
                     throw new InvalidOperationException(
                         $"Ya existe otro usuario con el email '{normalizedEmail}'.");
+                }
             }
 
-            // Documento de identidad
             if (user.IdentityDocument != trimmedDoc)
             {
                 var existing = await _userRepository.GetByIdentityDocumentAsync(trimmedDoc);
+
                 if (existing != null && existing.Id != id)
+                {
                     throw new InvalidOperationException(
                         $"Ya existe otro usuario con el documento '{trimmedDoc}'.");
+                }
             }
 
-            // Username
             if (user.Username != trimmedUsername)
             {
                 var existing = await _userRepository.GetByUsernameAsync(trimmedUsername);
+
                 if (existing != null && existing.Id != id)
+                {
                     throw new InvalidOperationException(
                         $"Ya existe otro usuario con el username '{trimmedUsername}'.");
+                }
+            }
+
+            var updatedRoleId = await _userRepository.GetRoleIdByNameAsync(dto.Role.Trim());
+
+            if (updatedRoleId == null)
+            {
+                throw new ArgumentException($"El rol '{dto.Role}' no existe.");
             }
 
             user.FullName = dto.FullName.Trim();
@@ -152,31 +187,31 @@ namespace ScheduleApp.Application.Services
             user.Username = trimmedUsername;
             user.IdentityDocument = trimmedDoc;
             user.IsActive = dto.IsActive;
-            var updatedRoleId = await _userRepository.GetRoleIdByNameAsync(dto.Role.Trim());
-            if (updatedRoleId == null)
-                throw new ArgumentException($"El rol '{dto.Role}' no existe.");
             user.RoleId = updatedRoleId.Value;
-          
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
                 user.PasswordHash = _passwordHasher.Hash(dto.Password);
+            }
 
             await _userRepository.UpdateAsync(user);
+
             return MapToResponseDto(user);
         }
 
-        // Eliminacion logica del usuario (soft delete).
-        // Cambia IsDeleted = true (permanente), no IsActive (que puede variar).
-        // Siguiendo el patron pedido por Heili: IsActive es funcional, IsDeleted es definitivo.
         public async Task<bool> DeleteUserAsync(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
 
             if (user == null)
+            {
                 return false;
+            }
 
             if (user.IsDeleted)
+            {
                 return true;
+            }
 
             user.IsDeleted = true;
 
@@ -184,7 +219,6 @@ namespace ScheduleApp.Application.Services
 
             return true;
         }
-
 
         private static UserResponseDto MapToResponseDto(User user)
         {
@@ -197,6 +231,7 @@ namespace ScheduleApp.Application.Services
                 IdentityDocument = user.IdentityDocument,
                 RoleName = user.Role?.Name ?? string.Empty,
                 IsActive = user.IsActive,
+                IsDeleted = user.IsDeleted,
                 CreatedAt = user.CreatedAt
             };
         }
