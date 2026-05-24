@@ -13,6 +13,10 @@ public class Teacher
     public string PhoneNumber { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 
+    public Guid? SpecialtyId { get; set; }
+
+    public Specialty? Specialty { get; set; }
+
     // Auditoría
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

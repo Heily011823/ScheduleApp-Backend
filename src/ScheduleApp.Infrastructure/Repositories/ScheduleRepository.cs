@@ -102,6 +102,7 @@ public class ScheduleRepository : IScheduleRepository
         // Esto evita que se omitan materias cuando la tabla TeacherSubjects
         // todavia no esta poblada (caso comun en datos iniciales del proyecto).
         var fallbackTeachers = await _context.Teachers
+            .Include(t => t.Specialty)
             .Where(t => t.IsActive)
             .ToListAsync();
 
@@ -111,14 +112,38 @@ public class ScheduleRepository : IScheduleRepository
 
         foreach (var subject in subjects)
         {
-            var teacherSubject = teacherSubjects
-                .FirstOrDefault(ts => ts.SubjectId == subject.Id);
+            // Obtener la especialidad requerida por la materia (puede ser null)
+            var requiredSpecialtyId = subject.SpecialtyId;
 
-            // Preferir el docente asignado oficialmente; si no hay, usar fallback.
-            var teacher = teacherSubject?.Teacher ?? fallbackTeachers.FirstOrDefault();
+            // 1. Buscar docente asignado oficialmente (TeacherSubject) que cumpla la especialidad
+            var teacherSubject = teacherSubjects.FirstOrDefault(ts => ts.SubjectId == subject.Id);
+
+            Teacher? teacher = null;
+            if (teacherSubject?.Teacher != null)
+            {
+                // Si la materia no requiere especialidad, o el docente tiene la especialidad requerida
+                if (!requiredSpecialtyId.HasValue ||
+                    teacherSubject.Teacher.SpecialtyId == requiredSpecialtyId)
+                {
+                    teacher = teacherSubject.Teacher;
+                }
+            }
+
+            // 2. Si no se encontró docente asignado válido y la materia requiere especialidad, buscar en fallback
+            if (teacher == null && requiredSpecialtyId.HasValue)
+            {
+                teacher = fallbackTeachers
+                    .FirstOrDefault(t => t.SpecialtyId == requiredSpecialtyId);
+            }
+
+            // 3. Si la materia NO requiere especialidad, tomar cualquier docente de respaldo
+            if (teacher == null && !requiredSpecialtyId.HasValue)
+            {
+                teacher = fallbackTeachers.FirstOrDefault();
+            }
 
             if (teacher == null)
-                continue;
+                continue;  // No hay docente calificado para esta materia
 
             bool assigned = false;
 
@@ -132,50 +157,29 @@ public class ScheduleRepository : IScheduleRepository
 
                     foreach (var classroom in classrooms)
                     {
-                        if (IsTeacherBusy(
-                                existingSchedules,
-                                generatedSchedules,
-                                teacher.Id,
-                                day,
-                                slotStart,
-                                slotEnd))
-                        {
+                        if (IsTeacherBusy(existingSchedules, generatedSchedules, teacher.Id, day, slotStart, slotEnd))
                             break;
-                        }
 
-                        if (IsClassroomBusy(
-                                existingSchedules,
-                                generatedSchedules,
-                                classroom.Id,
-                                day,
-                                slotStart,
-                                slotEnd))
-                        {
+                        if (IsClassroomBusy(existingSchedules, generatedSchedules, classroom.Id, day, slotStart, slotEnd))
                             continue;
-                        }
 
                         generatedSchedules.Add(new GeneratedScheduleEntryDto
                         {
                             Id = Guid.NewGuid(),
-
                             SubjectId = subject.Id,
                             SubjectCode = subject.Code,
                             SubjectName = subject.Name,
                             Credits = subject.Credits,
                             WeeklyHours = subject.WeeklyHours,
                             IsTapsi = subject.IsTapsi,
-
                             TeacherId = teacher.Id,
                             TeacherFullName = $"{teacher.FirstName} {teacher.LastName}",
-
                             ClassroomId = classroom.Id,
                             ClassroomCode = classroom.Code,
                             ClassroomName = classroom.Name,
-
                             Day = day,
                             StartTime = slotStart,
                             EndTime = slotEnd,
-
                             AcademicProgram = academicProgram.Name,
                             Shift = shift,
                             Semester = semesterNumber,

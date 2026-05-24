@@ -12,8 +12,8 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260523231030_AddSpecialtyTableToDatabase")]
-    partial class AddSpecialtyTableToDatabase
+    [Migration("20260524160720_AddSpecialtyIdToTeacher")]
+    partial class AddSpecialtyIdToTeacher
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -292,10 +292,6 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
-                    b.Property<string>("Icon")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -473,6 +469,9 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<Guid?>("SpecialtyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -483,6 +482,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.HasIndex("IdentityDocument")
                         .IsUnique();
+
+                    b.HasIndex("SpecialtyId");
 
                     b.ToTable("Teachers", (string)null);
                 });
@@ -637,6 +638,15 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .WithMany("Subjects")
                         .HasForeignKey("SpecialtyId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Specialty");
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.Teacher", b =>
+                {
+                    b.HasOne("ScheduleApp.Domain.Entities.Specialty", "Specialty")
+                        .WithMany()
+                        .HasForeignKey("SpecialtyId");
 
                     b.Navigation("Specialty");
                 });

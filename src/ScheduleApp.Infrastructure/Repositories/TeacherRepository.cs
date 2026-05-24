@@ -74,9 +74,12 @@ namespace ScheduleApp.Infrastructure.Repositories
         /// </summary>
         public async Task<Teacher?> GetByIdAsync(Guid id)
         {
+
+
             // CORREGIDO: FindAsync no soporta .Include(), por lo que mutamos a FirstOrDefaultAsync
             return await _context.Teachers
                 .Include(t => t.Availabilities)
+                .Include(t => t.Specialty)
                 .Include(t => t.TeacherSubjects)
                     .ThenInclude(ts => ts.Subject)
                 .FirstOrDefaultAsync(t => t.Id == id);
@@ -159,6 +162,7 @@ namespace ScheduleApp.Infrastructure.Repositories
         {
             var query = _context.Teachers
                 .Include(t => t.Availabilities)
+                .Include(t => t.Specialty)
                 .Include(t => t.TeacherSubjects)
                     .ThenInclude(ts => ts.Subject)
                 .AsQueryable();

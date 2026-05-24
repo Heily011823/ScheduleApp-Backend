@@ -500,7 +500,10 @@ namespace ScheduleApp.Application.Services
                 // ======================================================
                 // HORAS
                 // ======================================================
-                TeachingHours = mainAvailability?.MaxTeachingHours ?? 0
+                TeachingHours = mainAvailability?.MaxTeachingHours ?? 0,
+
+                SpecialtyId = teacher.SpecialtyId,
+                SpecialtyName = teacher.Specialty?.Name
             };
         }
 

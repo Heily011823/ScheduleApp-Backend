@@ -16,6 +16,9 @@ public class TeacherResponseDto
 
     public string PhoneNumber { get; set; } = string.Empty;
 
+    public Guid? SpecialtyId { get; set; }
+    public string? SpecialtyName { get; set; }
+
     // ======================================================
     // NUEVAS PROPIEDADES
     // ======================================================
