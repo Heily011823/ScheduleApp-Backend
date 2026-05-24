@@ -46,13 +46,9 @@ namespace ScheduleApp.Application.Services
                 Semester = dto.Semester,
                 Credits = dto.Credits,
                 WeeklyHours = dto.WeeklyHours,
-<<<<<<< Updated upstream
-                IsActive = true,
-=======
                 IsTapsi = dto.IsTapsi,
-                IsActive = dto.IsActive,
+                IsActive = true,
                 IsDeleted = false,
->>>>>>> Stashed changes
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -66,8 +62,7 @@ namespace ScheduleApp.Application.Services
             if (subject == null)
                 throw new Exception("Subject not found");
 
-            // QUITAMOS la validación de Code en Update
-            // porque el código no se edita desde el formulario
+            // El codigo no se edita desde el formulario, no se valida aca
             if (string.IsNullOrWhiteSpace(dto.Name))
                 throw new Exception("Name is required");
 
@@ -98,16 +93,10 @@ namespace ScheduleApp.Application.Services
             if (subject == null)
                 throw new Exception("Subject not found");
 
-            // ✅ CORREGIDO: Cambiar IsDeleted por !IsActive
             if (!subject.IsActive)
                 throw new Exception("The subject has already been deleted");
 
-<<<<<<< Updated upstream
-            // ✅ CORREGIDO: fl -> false
-            subject.IsActive = false;
-=======
             subject.IsDeleted = true;
->>>>>>> Stashed changes
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -146,10 +135,10 @@ namespace ScheduleApp.Application.Services
             using var workbook = new XLWorkbook();
             var sheet = workbook.Worksheets.Add("Materias");
 
-            sheet.Cell(1, 1).Value = "Código";
+            sheet.Cell(1, 1).Value = "Codigo";
             sheet.Cell(1, 2).Value = "Nombre";
             sheet.Cell(1, 3).Value = "Semestre";
-            sheet.Cell(1, 4).Value = "Créditos";
+            sheet.Cell(1, 4).Value = "Creditos";
             sheet.Cell(1, 5).Value = "Horas semanales";
             sheet.Cell(1, 6).Value = "Estado";
 
@@ -177,7 +166,7 @@ namespace ScheduleApp.Application.Services
             sb.AppendLine("<html><body>");
             sb.AppendLine("<h1>Reporte de Materias</h1>");
             sb.AppendLine("<table border='1' cellpadding='5' cellspacing='0'>");
-            sb.AppendLine("<tr><th>Código</th><th>Nombre</th><th>Semestre</th><th>Créditos</th><th>Horas semanales</th><th>Estado</th></tr>");
+            sb.AppendLine("<tr><th>Codigo</th><th>Nombre</th><th>Semestre</th><th>Creditos</th><th>Horas semanales</th><th>Estado</th></tr>");
 
             foreach (var s in subjects)
             {

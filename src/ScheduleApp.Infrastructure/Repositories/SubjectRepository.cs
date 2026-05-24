@@ -16,11 +16,11 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<Subject?> GetByIdAsync(Guid id)
     {
-        // Solo retorna NO borradas
+        // Solo retorna las materias no borradas
         return await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id && !s.IsDeleted);
     }
 
-    // Método adicional para obtener cualquier registro, incluso borrado
+    // Obtiene cualquier registro, incluso uno borrado
     public async Task<Subject?> GetByIdAsyncWithoutFilter(Guid id)
     {
         return await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
@@ -28,13 +28,8 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<List<Subject>> GetActiveAsync()
     {
-        // ✅ CORREGIDO: Quitar !s.IsDeleted, usar solo IsActive
         return await _context.Subjects
-<<<<<<< Updated upstream
-            .Where(s => s.IsActive)
-=======
             .Where(s => s.IsActive && !s.IsDeleted)
->>>>>>> Stashed changes
             .ToListAsync();
     }
 
@@ -52,24 +47,20 @@ public class SubjectRepository : ISubjectRepository
 
     public async Task<Subject?> GetByCodeAsync(string code)
     {
-<<<<<<< Updated upstream
-        // ✅ CORREGIDO: Quitar && !s.IsDeleted
         return await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Code == code && s.IsActive);
-=======
-        return await _context.Subjects.FirstOrDefaultAsync(s => s.Code == code && !s.IsDeleted);
+            .FirstOrDefaultAsync(s => s.Code == code && !s.IsDeleted);
     }
 
     public async Task DeleteLogicalAsync(Guid id)
     {
         var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
-        if (subject == null) throw new KeyNotFoundException("Materia no encontrada.");
+        if (subject == null)
+            throw new KeyNotFoundException("Materia no encontrada.");
 
         subject.IsDeleted = true;
         subject.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
->>>>>>> Stashed changes
     }
 
     public async Task<(List<Subject> Items, int TotalCount)> SearchAsync(
@@ -81,16 +72,8 @@ public class SubjectRepository : ISubjectRepository
     {
         var query = _context.Subjects.AsQueryable();
 
-<<<<<<< Updated upstream
-        // ✅ CORREGIDO: Usar IsActive en lugar de IsDeleted
-        // Si no se pasa filtro de estado, mostrar solo activos por defecto
-        if (!isActive.HasValue)
-        {
-            query = query.Where(s => s.IsActive);
-        }
-=======
+        // Nunca mostrar materias borradas
         query = query.Where(s => !s.IsDeleted);
->>>>>>> Stashed changes
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(s => s.Name.Contains(search) || s.Code.Contains(search));
