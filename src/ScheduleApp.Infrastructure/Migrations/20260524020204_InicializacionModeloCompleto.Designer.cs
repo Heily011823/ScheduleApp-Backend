@@ -12,8 +12,8 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260520183349_AddIsDeletedToSubjects")]
-    partial class AddIsDeletedToSubjects
+    [Migration("20260524020204_InicializacionModeloCompleto")]
+    partial class InicializacionModeloCompleto
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -273,6 +273,44 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.ToTable("Schedules");
                 });
 
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.Specialty", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Specialties");
+                });
+
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Subject", b =>
                 {
                     b.Property<Guid>("Id")
@@ -295,9 +333,6 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsTapsi")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -311,6 +346,9 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.Property<int>("Semester")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("SpecialtyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -321,6 +359,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("SpecialtyId");
 
                     b.ToTable("Subjects", (string)null);
                 });
@@ -587,6 +627,16 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.Subject", b =>
+                {
+                    b.HasOne("ScheduleApp.Domain.Entities.Specialty", "Specialty")
+                        .WithMany("Subjects")
+                        .HasForeignKey("SpecialtyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Specialty");
+                });
+
             modelBuilder.Entity("ScheduleApp.Domain.Entities.TeacherAvailability", b =>
                 {
                     b.HasOne("ScheduleApp.Domain.Entities.Teacher", "Teacher")
@@ -601,9 +651,9 @@ namespace ScheduleApp.Infrastructure.Migrations
             modelBuilder.Entity("ScheduleApp.Domain.Entities.TeacherSubject", b =>
                 {
                     b.HasOne("ScheduleApp.Domain.Entities.Subject", "Subject")
-                        .WithMany()
+                        .WithMany("TeacherSubjects")
                         .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ScheduleApp.Domain.Entities.Teacher", "Teacher")
@@ -631,6 +681,16 @@ namespace ScheduleApp.Infrastructure.Migrations
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.Specialty", b =>
+                {
+                    b.Navigation("Subjects");
+                });
+
+            modelBuilder.Entity("ScheduleApp.Domain.Entities.Subject", b =>
+                {
+                    b.Navigation("TeacherSubjects");
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Teacher", b =>

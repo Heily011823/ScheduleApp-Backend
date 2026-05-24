@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
@@ -15,17 +14,9 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    // En UserRepository
-    public async Task<User?> GetByEmailIncludingDeletedAsync(string email)
-    {
-        return await _context.Users
-            .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Email == email); // Sin filtro IsDeleted
-    }
-
     public async Task<User?> GetByEmailAsync(string email)
     {
-        var normalizedEmail = email.ToLower().Trim();
+        string normalizedEmail = email.ToLower().Trim();
 
         return await _context.Users
             .Include(u => u.Role)
@@ -34,25 +25,35 @@ public class UserRepository : IUserRepository
                 !u.IsDeleted);
     }
 
-    public async Task<User?> GetByEmailOrUsernameAsync(string login)
+    public async Task<User?> GetByEmailIncludingDeletedAsync(string email)
     {
-        var normalizedLogin = login.ToLower().Trim();
+        string normalizedEmail = email.ToLower().Trim();
 
         return await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
-                (u.Email == normalizedLogin ||
-                 u.Username.ToLower() == normalizedLogin) &&
-                !u.IsDeleted);
+                u.Email == normalizedEmail);
+    }
+
+    public async Task<User?> GetByEmailOrUsernameAsync(string login)
+    {
+        string normalizedLogin = login.ToLower().Trim();
+
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u =>
+                !u.IsDeleted &&
+                (
+                    u.Email == normalizedLogin ||
+                    u.Username.ToLower() == normalizedLogin
+                ));
     }
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
         return await _context.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u =>
-                u.Id == id &&
-                !u.IsDeleted);
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<IEnumerable<User>> SearchUsersAsync(
@@ -67,16 +68,21 @@ public class UserRepository : IUserRepository
 
         if (!string.IsNullOrWhiteSpace(name))
         {
+            string normalizedName = name.Trim();
+
             query = query.Where(u =>
-                u.FullName.Contains(name) ||
-                u.Username.Contains(name) ||
-                u.Email.Contains(name));
+                u.FullName.Contains(normalizedName) ||
+                u.Username.Contains(normalizedName) ||
+                u.Email.Contains(normalizedName));
         }
 
         if (!string.IsNullOrWhiteSpace(role))
         {
+            string normalizedRole = role.Trim();
+
             query = query.Where(u =>
-                u.Role.Name == role);
+                u.Role != null &&
+                u.Role.Name == normalizedRole);
         }
 
         if (isActive.HasValue)
@@ -85,13 +91,11 @@ public class UserRepository : IUserRepository
                 u.IsActive == isActive.Value);
         }
 
-        return await query.ToListAsync();
+        return await query
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
     }
 
-
-    // Paginacion con filtros (HU-58).
-    // Reutiliza la misma logica de filtros que SearchUsersAsync, aplica Skip/Take y devuelve el total.
-    // Tambien filtra IsDeleted para no incluir usuarios eliminados logicamente.
     public async Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
         string? name,
         string? role,
@@ -99,6 +103,16 @@ public class UserRepository : IUserRepository
         int page,
         int pageSize)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
         var query = _context.Users
             .Include(u => u.Role)
             .Where(u => !u.IsDeleted)
@@ -106,21 +120,30 @@ public class UserRepository : IUserRepository
 
         if (!string.IsNullOrWhiteSpace(name))
         {
+            string normalizedName = name.Trim();
+
             query = query.Where(u =>
-                u.FullName.Contains(name) ||
-                u.Username.Contains(name) ||
-                u.Email.Contains(name));
-        }
-        if (!string.IsNullOrWhiteSpace(role))
-        {
-            query = query.Where(u => u.Role.Name == role);
-        }
-        if (isActive.HasValue)
-        {
-            query = query.Where(u => u.IsActive == isActive.Value);
+                u.FullName.Contains(normalizedName) ||
+                u.Username.Contains(normalizedName) ||
+                u.Email.Contains(normalizedName));
         }
 
-        var totalCount = await query.CountAsync();
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            string normalizedRole = role.Trim();
+
+            query = query.Where(u =>
+                u.Role != null &&
+                u.Role.Name == normalizedRole);
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(u =>
+                u.IsActive == isActive.Value);
+        }
+
+        int totalCount = await query.CountAsync();
 
         var items = await query
             .OrderBy(u => u.FullName)
@@ -130,6 +153,7 @@ public class UserRepository : IUserRepository
 
         return (items, totalCount);
     }
+
     public async Task AddAsync(User user)
     {
         await _context.Users.AddAsync(user);
@@ -144,22 +168,53 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByIdentityDocumentAsync(string identityDocument)
     {
+        string normalizedDocument = identityDocument.Trim();
+
         return await _context.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.IdentityDocument == identityDocument);
+            .FirstOrDefaultAsync(u =>
+                u.IdentityDocument == normalizedDocument &&
+                !u.IsDeleted);
+    }
+
+    public async Task<User?> GetByIdentityDocumentIncludingDeletedAsync(string identityDocument)
+    {
+        string normalizedDocument = identityDocument.Trim();
+
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u =>
+                u.IdentityDocument == normalizedDocument);
     }
 
     public async Task<User?> GetByUsernameAsync(string username)
     {
+        string normalizedUsername = username.ToLower().Trim();
+
         return await _context.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Username == username);
+            .FirstOrDefaultAsync(u =>
+                u.Username.ToLower() == normalizedUsername &&
+                !u.IsDeleted);
+    }
+
+    public async Task<User?> GetByUsernameIncludingDeletedAsync(string username)
+    {
+        string normalizedUsername = username.ToLower().Trim();
+
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u =>
+                u.Username.ToLower() == normalizedUsername);
     }
 
     public async Task<Guid?> GetRoleIdByNameAsync(string roleName)
     {
+        string normalizedRoleName = roleName.Trim();
+
         var role = await _context.Roles
-            .FirstOrDefaultAsync(r => r.Name == roleName);
+            .FirstOrDefaultAsync(r => r.Name == normalizedRoleName);
+
         return role?.Id;
     }
 }

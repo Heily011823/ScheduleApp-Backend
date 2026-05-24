@@ -1,33 +1,41 @@
-﻿using System;
-using ScheduleApp.Domain.Entities;
-namespace ScheduleApp.Application.Interfaces;
+﻿using ScheduleApp.Domain.Entities;
 
-public interface IUserRepository
+namespace ScheduleApp.Application.Interfaces
 {
-    Task<User?> GetByEmailAsync(string email);
+    public interface IUserRepository
+    {
+        Task<User?> GetByEmailAsync(string email);
 
-    Task<Guid?> GetRoleIdByNameAsync(string roleName);
-    Task<User?> GetByEmailOrUsernameAsync(string login);
-    Task<User?> GetByIdAsync(Guid id);
-    Task<IEnumerable<User>> SearchUsersAsync(
-        string? name,
-        string? role,
-        bool? isActive);
+        Task<User?> GetByEmailIncludingDeletedAsync(string email);
 
-    Task<User?> GetByEmailIncludingDeletedAsync(string email);
+        Task<User?> GetByIdentityDocumentAsync(string identityDocument);
 
-    // Paginacion con filtros (HU-58).
-    // Retorna los registros de la pagina pedida y el total de registros que matchean los filtros.
-    Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
-        string? name,
-        string? role,
-        bool? isActive,
-        int page,
-        int pageSize);
+        Task<User?> GetByIdentityDocumentIncludingDeletedAsync(string identityDocument);
 
-    Task AddAsync(User user);
-    Task UpdateAsync(User user);
+        Task<User?> GetByUsernameAsync(string username);
 
-    Task<User?> GetByIdentityDocumentAsync(string identityDocument);
-    Task<User?> GetByUsernameAsync(string username);
+        Task<User?> GetByUsernameIncludingDeletedAsync(string username);
+
+        Task<User?> GetByEmailOrUsernameAsync(string login);
+
+        Task<User?> GetByIdAsync(Guid id);
+
+        Task<Guid?> GetRoleIdByNameAsync(string roleName);
+
+        Task<IEnumerable<User>> SearchUsersAsync(
+            string? name,
+            string? role,
+            bool? isActive);
+
+        Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
+            string? name,
+            string? role,
+            bool? isActive,
+            int page,
+            int pageSize);
+
+        Task AddAsync(User user);
+
+        Task UpdateAsync(User user);
+    }
 }

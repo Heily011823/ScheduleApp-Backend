@@ -12,10 +12,11 @@ public class UserResponseDto
 
     public string IdentityDocument { get; set; } = string.Empty;
 
-    
     public string RoleName { get; set; } = string.Empty;
 
     public bool IsActive { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     public DateTime CreatedAt { get; set; }
 }

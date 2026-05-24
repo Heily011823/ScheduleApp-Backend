@@ -17,10 +17,10 @@ public class Subject
 
 
 
-    // ✅ Estas dos líneas DEBEN estar UNA SOLA VEZ
+   
     public Guid? SpecialtyId { get; set; }
     public Specialty? Specialty { get; set; }
 
-    // Relación existente (si la tienes)
+ 
     public ICollection<TeacherSubject> TeacherSubjects { get; set; } = new List<TeacherSubject>();
 }

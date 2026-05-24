@@ -1,18 +1,23 @@
 -- ==========================================================================
--- SCRIPT DE CREACIÓN DE TABLAS CORREGIDO 
+-- SCRIPT DE CREACIÓN 
 -- ==========================================================================
-
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
 -- ========================
 -- ROLES
 -- ========================
--- Reemplaza las líneas que definen @AdminRoleId y @CoordRoleId
 DECLARE @AdminRoleId UNIQUEIDENTIFIER = '11111111-1111-1111-1111-111111111111';
 DECLARE @CoordRoleId UNIQUEIDENTIFIER = '22222222-2222-2222-2222-222222222222';
 
--- Luego inserta los roles solo si no existen (usando esos GUIDs)
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Roles]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE Roles (
+        Id UNIQUEIDENTIFIER PRIMARY KEY,
+        Name NVARCHAR(50) NOT NULL UNIQUE
+    );
+END
+
 IF NOT EXISTS (SELECT 1 FROM Roles WHERE Name = 'Administrador')
     INSERT INTO Roles (Id, Name) VALUES (@AdminRoleId, 'Administrador');
 ELSE
@@ -45,6 +50,14 @@ BEGIN
         CONSTRAINT CHK_User_IdentityDocument CHECK (IdentityDocument NOT LIKE '%[^0-9]%' AND LEN(IdentityDocument) BETWEEN 8 AND 10)
     );
 END
+ELSE
+BEGIN
+    -- Si la tabla ya existe pero no tiene IsDeleted, se agrega dinámicamente
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Users]') AND name = N'IsDeleted')
+    BEGIN
+        ALTER TABLE [Users] ADD [IsDeleted] BIT NOT NULL DEFAULT 0;
+    END
+END
 
 -- ========================
 -- ACADEMIC PROGRAMS
@@ -62,6 +75,11 @@ BEGIN
         CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
         UpdatedAt DATETIME2 NULL
     );
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[AcademicPrograms]') AND name = N'IsDeleted')
+        ALTER TABLE [AcademicPrograms] ADD [IsDeleted] BIT NOT NULL DEFAULT 0;
 END
 
 -- ========================
@@ -99,6 +117,11 @@ BEGIN
         UpdatedAt DATETIME2 NULL
     );
 END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Subjects]') AND name = N'IsDeleted')
+        ALTER TABLE [Subjects] ADD [IsDeleted] BIT NOT NULL DEFAULT 0;
+END
 
 -- ========================
 -- TEACHERS
@@ -115,11 +138,13 @@ BEGIN
         IsActive BIT NOT NULL DEFAULT 1,
         IsDeleted BIT NOT NULL DEFAULT 0,
         CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-        UpdatedAt DATETIME2 NULL,
-        CONSTRAINT CHK_Teacher_Email CHECK (Email LIKE '%@autonoma.edu.co'),
-        CONSTRAINT CHK_Teacher_IdentityDocument CHECK (IdentityDocument NOT LIKE '%[^0-9]%' AND LEN(IdentityDocument) BETWEEN 8 AND 10),
-        CONSTRAINT CHK_Teacher_PhoneNumber CHECK (PhoneNumber LIKE '3[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+        UpdatedAt DATETIME2 NULL
     );
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Teachers]') AND name = N'IsDeleted')
+        ALTER TABLE [Teachers] ADD [IsDeleted] BIT NOT NULL DEFAULT 0;
 END
 
 -- ========================
@@ -141,6 +166,11 @@ BEGIN
         UpdatedAt DATETIME2 NULL
     );
 END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Classrooms]') AND name = N'IsDeleted')
+        ALTER TABLE [Classrooms] ADD [IsDeleted] BIT NOT NULL DEFAULT 0;
+END
 
 -- ========================
 -- TAPSI RULES
@@ -158,9 +188,14 @@ BEGIN
         UpdatedAt DATETIME2 NULL
     );
 END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[TapsiRules]') AND name = N'IsDeleted')
+        ALTER TABLE [TapsiRules] ADD [IsDeleted] BIT NOT NULL DEFAULT 0;
+END
 
 -- ========================
--- TEACHER SUBJECTS (Many-to-Many)
+-- TEACHER SUBJECTS
 -- ========================
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TeacherSubjects]') AND type in (N'U'))
 BEGIN
@@ -228,4 +263,4 @@ BEGIN
 END
 
 COMMIT TRANSACTION;
-PRINT 'Todas las tablas creadas correctamente';
+PRINT 'Todas las tablas y columnas actualizadas correctamente.';
