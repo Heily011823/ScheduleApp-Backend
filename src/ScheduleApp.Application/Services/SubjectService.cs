@@ -46,7 +46,13 @@ namespace ScheduleApp.Application.Services
                 Semester = dto.Semester,
                 Credits = dto.Credits,
                 WeeklyHours = dto.WeeklyHours,
+<<<<<<< Updated upstream
                 IsActive = true,
+=======
+                IsTapsi = dto.IsTapsi,
+                IsActive = dto.IsActive,
+                IsDeleted = false,
+>>>>>>> Stashed changes
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -60,9 +66,8 @@ namespace ScheduleApp.Application.Services
             if (subject == null)
                 throw new Exception("Subject not found");
 
-            if (string.IsNullOrWhiteSpace(dto.Code))
-                throw new Exception("Code is required");
-
+            // QUITAMOS la validación de Code en Update
+            // porque el código no se edita desde el formulario
             if (string.IsNullOrWhiteSpace(dto.Name))
                 throw new Exception("Name is required");
 
@@ -75,11 +80,12 @@ namespace ScheduleApp.Application.Services
             if (dto.WeeklyHours <= 0)
                 throw new Exception("Weekly hours must be greater than 0");
 
-            subject.Code = dto.Code;
             subject.Name = dto.Name;
             subject.Semester = dto.Semester;
             subject.Credits = dto.Credits;
             subject.WeeklyHours = dto.WeeklyHours;
+            subject.IsActive = dto.IsActive;
+            subject.IsTapsi = dto.IsTapsi;
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -96,8 +102,12 @@ namespace ScheduleApp.Application.Services
             if (!subject.IsActive)
                 throw new Exception("The subject has already been deleted");
 
+<<<<<<< Updated upstream
             // ✅ CORREGIDO: fl -> false
             subject.IsActive = false;
+=======
+            subject.IsDeleted = true;
+>>>>>>> Stashed changes
             subject.UpdatedAt = DateTime.UtcNow;
 
             await _subjectRepository.UpdateAsync(subject);
@@ -113,11 +123,7 @@ namespace ScheduleApp.Application.Services
             int pageSize)
         {
             var (items, totalCount) = await _subjectRepository.SearchAsync(
-                search,
-                semester,
-                isActive,
-                page,
-                pageSize);
+                search, semester, isActive, page, pageSize);
 
             return new PagedResultDto<Subject>
             {
@@ -163,7 +169,6 @@ namespace ScheduleApp.Application.Services
             return stream.ToArray();
         }
 
-        // ✅ PDF como HTML simple, sin iTextSharp
         public async Task<byte[]> ExportSubjectsToPdfAsync()
         {
             var subjects = await _subjectRepository.GetActiveAsync();
@@ -187,7 +192,6 @@ namespace ScheduleApp.Application.Services
             }
 
             sb.AppendLine("</table></body></html>");
-
             return Encoding.UTF8.GetBytes(sb.ToString());
         }
     }

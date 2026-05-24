@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
         : base(options)
     {
     }
+    public DbSet<SubjectRestriction> SubjectRestrictions { get; set; }
     public DbSet<ProgramSemester> ProgramSemesters { get; set; }
     public DbSet<User> Users => Set<User>();
     public DbSet<Subject> Subjects => Set<Subject>();
@@ -26,6 +27,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Specialty> Specialties { get; set; }
     public DbSet<AcademicProgram> AcademicPrograms { get; set; }
+    public DbSet<SubjectSchedule>
+     SubjectSchedules { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +59,7 @@ public class AppDbContext : DbContext
                 }
             );
         });
+
 
         // ==========================================
         // CONFIGURACIÓN: USER
@@ -237,7 +241,33 @@ public class AppDbContext : DbContext
                 }
             );
         });
+        // ==========================================
+        // CONFIGURACIÓN: SUBJECT SCHEDULES
+        // ==========================================
+        modelBuilder.Entity<SubjectSchedule>(entity =>
+        {
+            entity.ToTable("SubjectSchedules");
 
+            entity.HasKey(ss => ss.Id);
+
+            entity.Property(ss => ss.DayOfWeek)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(ss => ss.StartHour)
+                .IsRequired();
+
+            entity.Property(ss => ss.EndHour)
+                .IsRequired();
+
+            entity.Property(ss => ss.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(ss => ss.Subject)
+                .WithMany(s => s.SubjectSchedules)
+                .HasForeignKey(ss => ss.SubjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
         // ==========================================
         // CONFIGURACIÓN: TEACHERS (¡Completamente Normalizado!)
         // ==========================================
@@ -324,6 +354,36 @@ public class AppDbContext : DbContext
             entity.HasOne(ta => ta.Teacher)
                 .WithMany(t => t.Availabilities)
                 .HasForeignKey(ta => ta.TeacherId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        // ==========================================
+        // CONFIGURACIÓN: SUBJECT RESTRICTIONS
+        // ==========================================
+        modelBuilder.Entity<SubjectRestriction>(entity =>
+        {
+            entity.ToTable("SubjectRestrictions");
+
+            entity.HasKey(sr => sr.Id);
+
+            entity.Property(sr => sr.Day)
+                .IsRequired();
+
+            entity.Property(sr => sr.StartTime)
+                .IsRequired();
+
+            entity.Property(sr => sr.EndTime)
+                .IsRequired();
+
+            entity.Property(sr => sr.RestrictionType)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(sr => sr.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(sr => sr.Subject)
+                .WithMany()
+                .HasForeignKey(sr => sr.SubjectId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
