@@ -11,16 +11,19 @@ namespace ScheduleApp.Tests.Services
     {
         private readonly Mock<ITeacherRepository> _teacherRepositoryMock;
         private readonly Mock<ISubjectRepository> _subjectRepositoryMock;
+        private readonly Mock<ISpecialtyService> _specialtyServiceMock;  // ✅ NUEVO
         private readonly TeacherService _service;
 
         public TeacherServiceTests()
         {
             _teacherRepositoryMock = new Mock<ITeacherRepository>();
             _subjectRepositoryMock = new Mock<ISubjectRepository>();
+            _specialtyServiceMock = new Mock<ISpecialtyService>();  // ✅ NUEVO
 
             _service = new TeacherService(
                 _teacherRepositoryMock.Object,
-                _subjectRepositoryMock.Object
+                _subjectRepositoryMock.Object,
+                _specialtyServiceMock.Object  // ✅ NUEVO
             );
         }
 
@@ -37,7 +40,7 @@ namespace ScheduleApp.Tests.Services
                 PhoneNumber = "3001234567",
                 TeachingHours = 20,
                 ContractType = "Tiempo Completo",
-                Specialties = "Programación"
+                SpecialtyIds = new List<Guid> { Guid.NewGuid() }  // ✅ Cambiado: Specialties -> SpecialtyIds
             };
 
             _teacherRepositoryMock
@@ -48,24 +51,10 @@ namespace ScheduleApp.Tests.Services
                 .Setup(r => r.GetByIdentityDocumentAsync(dto.IdentityDocument))
                 .ReturnsAsync((Teacher?)null);
 
-            _subjectRepositoryMock
-                .Setup(r => r.SearchAsync(
-                    It.IsAny<string>(),
-                    null,
-                    true,
-                    1,
-                    1))
-                .ReturnsAsync((
-                    new List<Subject>
-                    {
-                        new Subject
-                        {
-                            Id = Guid.NewGuid(),
-                            Name = "Programación"
-                        }
-                    },
-                    1
-                ));
+            // ✅ NUEVO: Mock de validación de especialidades
+            _specialtyServiceMock
+                .Setup(s => s.ValidateSpecialtyIdsExistAsync(dto.SpecialtyIds))
+                .Returns(Task.CompletedTask);
 
             // Act
             var result = await _service.CreateAsync(dto);
@@ -87,7 +76,8 @@ namespace ScheduleApp.Tests.Services
             var dto = new CreateTeacherDto
             {
                 Email = "duplicado@test.com",
-                IdentityDocument = "123"
+                IdentityDocument = "123",
+                SpecialtyIds = new List<Guid>()  // ✅ Añadido
             };
 
             _teacherRepositoryMock
@@ -110,7 +100,8 @@ namespace ScheduleApp.Tests.Services
             var dto = new CreateTeacherDto
             {
                 Email = "nuevo@test.com",
-                IdentityDocument = "999999"
+                IdentityDocument = "999999",
+                SpecialtyIds = new List<Guid>()  // ✅ Añadido
             };
 
             _teacherRepositoryMock
@@ -128,6 +119,45 @@ namespace ScheduleApp.Tests.Services
             await action.Should()
                 .ThrowAsync<InvalidOperationException>()
                 .WithMessage("*documento de identidad ya está registrado*");
+        }
+
+        [Fact]
+        public async Task CreateAsync_DeberiaLanzarError_SiEspecialidadNoExiste()
+        {
+            // Arrange
+            var invalidSpecialtyId = Guid.NewGuid();
+            var dto = new CreateTeacherDto
+            {
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@test.com",
+                IdentityDocument = "888888",
+                PhoneNumber = "3008888888",
+                TeachingHours = 20,
+                ContractType = "Tiempo Completo",
+                SpecialtyIds = new List<Guid> { invalidSpecialtyId }
+            };
+
+            _teacherRepositoryMock
+                .Setup(r => r.GetByEmailAsync(dto.Email))
+                .ReturnsAsync((Teacher?)null);
+
+            _teacherRepositoryMock
+                .Setup(r => r.GetByIdentityDocumentAsync(dto.IdentityDocument))
+                .ReturnsAsync((Teacher?)null);
+
+            // ✅ Simular que la especialidad NO existe
+            _specialtyServiceMock
+                .Setup(s => s.ValidateSpecialtyIdsExistAsync(dto.SpecialtyIds))
+                .ThrowsAsync(new InvalidOperationException($"Las siguientes especialidades no existen: {invalidSpecialtyId}"));
+
+            // Act
+            Func<Task> action = async () => await _service.CreateAsync(dto);
+
+            // Assert
+            await action.Should()
+                .ThrowAsync<InvalidOperationException>()
+                .WithMessage("*especialidades no existen*");
         }
 
         [Fact]
@@ -216,7 +246,8 @@ namespace ScheduleApp.Tests.Services
                     Id = Guid.NewGuid(),
                     FirstName = "Salome",
                     LastName = "Carmona",
-                    Email = "salome@test.com"
+                    Email = "salome@test.com",
+                    TeacherSubjects = new List<TeacherSubject>()
                 }
             };
 
