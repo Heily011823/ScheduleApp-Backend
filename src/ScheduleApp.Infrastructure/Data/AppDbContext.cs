@@ -2,7 +2,6 @@
 using ScheduleApp.Domain.Entities;
 using System;
 
-// Ruta recomendada: src/ScheduleApp.Infrastructure/Data/AppDbContext.cs
 namespace ScheduleApp.Infrastructure.Data;
 
 public class AppDbContext : DbContext
@@ -11,6 +10,7 @@ public class AppDbContext : DbContext
         : base(options)
     {
     }
+
     public DbSet<SubjectRestriction> SubjectRestrictions { get; set; }
     public DbSet<ProgramSemester> ProgramSemesters { get; set; }
     public DbSet<User> Users => Set<User>();
@@ -21,19 +21,17 @@ public class AppDbContext : DbContext
     public DbSet<Classroom> Classrooms { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<Role> Roles { get; set; }
-    
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
     public DbSet<TeacherSubject> TeacherSubjects => Set<TeacherSubject>();
-
     public DbSet<Specialty> Specialties { get; set; }
     public DbSet<AcademicProgram> AcademicPrograms { get; set; }
-    public DbSet<SubjectSchedule>
-     SubjectSchedules { get; set; }
-
+    public DbSet<SubjectSchedule> SubjectSchedules { get; set; }
     public DbSet<TeacherSpecialty> TeacherSpecialties { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         // ==========================================
         // CONFIGURACIÓN: ROLE
         // ==========================================
@@ -61,7 +59,6 @@ public class AppDbContext : DbContext
                 }
             );
         });
-
 
         // ==========================================
         // CONFIGURACIÓN: USER
@@ -122,11 +119,11 @@ public class AppDbContext : DbContext
 
             entity.Property(s => s.Code)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasMaxLength(50);
 
             entity.Property(s => s.Name)
                 .IsRequired()
-                .HasMaxLength(150);
+                .HasMaxLength(200);
 
             entity.Property(s => s.Semester)
                 .IsRequired();
@@ -137,11 +134,15 @@ public class AppDbContext : DbContext
             entity.Property(s => s.WeeklyHours)
                 .IsRequired();
 
+            entity.Property(s => s.IsTapsi)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             entity.Property(s => s.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            entity.Property(s => s.IsTapsi)
+            entity.Property(s => s.IsDeleted)
                 .IsRequired()
                 .HasDefaultValue(false);
 
@@ -150,6 +151,11 @@ public class AppDbContext : DbContext
 
             entity.Property(s => s.UpdatedAt)
                 .IsRequired(false);
+
+            entity.HasOne(s => s.Specialty)
+                .WithMany(sp => sp.Subjects)
+                .HasForeignKey(s => s.SpecialtyId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ==========================================
@@ -189,19 +195,18 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<TapsiRule>(entity =>
         {
             entity.ToTable("TapsiRules");
+
             entity.HasKey(t => t.Id);
 
             entity.Property(t => t.RuleType)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasMaxLength(100);
 
             entity.Property(t => t.Description)
-                .IsRequired()
-                .HasMaxLength(300);
+                .IsRequired();
 
             entity.Property(t => t.Value)
-                .IsRequired()
-                .HasMaxLength(100);
+                .IsRequired();
 
             entity.Property(t => t.IsActive)
                 .IsRequired()
@@ -243,6 +248,7 @@ public class AppDbContext : DbContext
                 }
             );
         });
+
         // ==========================================
         // CONFIGURACIÓN: SUBJECT SCHEDULES
         // ==========================================
@@ -270,12 +276,14 @@ public class AppDbContext : DbContext
                 .HasForeignKey(ss => ss.SubjectId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
         // ==========================================
-        // CONFIGURACIÓN: TEACHERS (¡Completamente Normalizado!)
+        // CONFIGURACIÓN: TEACHER
         // ==========================================
         modelBuilder.Entity<Teacher>(entity =>
         {
             entity.ToTable("Teachers");
+
             entity.HasKey(t => t.Id);
 
             entity.HasIndex(t => t.Email).IsUnique();
@@ -283,11 +291,11 @@ public class AppDbContext : DbContext
 
             entity.Property(t => t.FirstName)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasMaxLength(100);
 
             entity.Property(t => t.LastName)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasMaxLength(100);
 
             entity.Property(t => t.Email)
                 .IsRequired()
@@ -301,9 +309,6 @@ public class AppDbContext : DbContext
                 .IsRequired(false)
                 .HasMaxLength(20);
 
-            // SE ELIMINARON: AcademicProgram, PreferredSubject y Availability de aquí.
-            // Ahora la información vive de forma estructurada en sus respectivas tablas relaciones.
-
             entity.Property(t => t.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
@@ -315,29 +320,36 @@ public class AppDbContext : DbContext
                 .IsRequired(false);
         });
 
-
-        // Configurar Specialty
+        // ==========================================
+        // CONFIGURACIÓN: SPECIALTY
+        // ==========================================
         modelBuilder.Entity<Specialty>(entity =>
         {
+            entity.ToTable("Specialties");
+
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Name).IsUnique();
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+
+            entity.HasIndex(e => e.Name)
+                .IsUnique();
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.DisplayOrder)
+                .HasDefaultValue(0);
         });
 
-        // Configurar relación Subject -> Specialty
-        modelBuilder.Entity<Subject>()
-            .HasOne(s => s.Specialty)
-            .WithMany(s => s.Subjects)
-            .HasForeignKey(s => s.SpecialtyId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-
         // ==========================================
-        // CONFIGURACIÓN: TEACHER AVAILABILITY (Relación 1 a Muchos)
+        // CONFIGURACIÓN: TEACHER AVAILABILITY
         // ==========================================
         modelBuilder.Entity<TeacherAvailability>(entity =>
         {
             entity.ToTable("TeacherAvailabilities");
+
             entity.HasKey(ta => ta.Id);
 
             entity.Property(ta => ta.Day)
@@ -352,12 +364,12 @@ public class AppDbContext : DbContext
             entity.Property(ta => ta.MaxTeachingHours)
                 .IsRequired();
 
-            // Configuración de la llave foránea con borrado en cascada
             entity.HasOne(ta => ta.Teacher)
                 .WithMany(t => t.Availabilities)
                 .HasForeignKey(ta => ta.TeacherId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
         // ==========================================
         // CONFIGURACIÓN: SUBJECT RESTRICTIONS
         // ==========================================
@@ -390,102 +402,17 @@ public class AppDbContext : DbContext
         });
 
         // ==========================================
-        // CONFIGURACIÓN: TEACHER SUBJECT (Relación Muchos a Muchos Intermedia)
+        // CONFIGURACIÓN: TEACHER SUBJECT
         // ==========================================
         modelBuilder.Entity<TeacherSubject>(entity =>
         {
             entity.ToTable("TeacherSubjects");
 
-            // Llave primaria compuesta reglamentaria
             entity.HasKey(ts => new { ts.TeacherId, ts.SubjectId });
 
             entity.Property(ts => ts.ContractType)
                 .IsRequired()
-                .HasMaxLength(50);
-
-            // Relación inversa hacia Teacher
-            entity.HasOne(ts => ts.Teacher)
-                .WithMany(t => t.TeacherSubjects)
-                .HasForeignKey(ts => ts.TeacherId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // Relación inversa hacia la tabla global existente de Subjects
-            entity.HasOne(ts => ts.Subject)
-                .WithMany()
-                .HasForeignKey(ts => ts.SubjectId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<Classroom>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Code).IsUnique();
-            entity.Property(e => e.Code).HasMaxLength(20).IsRequired();
-            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Building).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Type).HasMaxLength(50).IsRequired();
-        });
-
-        modelBuilder.Entity<Schedule>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-
-            // Relación con Materias
-            entity.HasOne(s => s.Subject)
-                  .WithMany()
-                  .HasForeignKey(s => s.SubjectId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            // Relación con Docentes
-            entity.HasOne(s => s.Teacher)
-                  .WithMany()
-                  .HasForeignKey(s => s.TeacherId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            // Relación con Aulas
-            entity.HasOne(s => s.Classroom)
-                  .WithMany()
-                  .HasForeignKey(s => s.ClassroomId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            // Límites de texto obligatorios
-            entity.Property(e => e.AcademicProgram).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Shift).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.Status).HasMaxLength(30).IsRequired();
-        });
-        modelBuilder.Entity<AcademicProgram>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-
-            // Criterio de aceptación: Código obligatorio y ÚNICO
-            entity.HasIndex(e => e.Code).IsUnique();
-            entity.Property(e => e.Code).HasMaxLength(20).IsRequired();
-
-            entity.Property(e => e.Name).HasMaxLength(150).IsRequired();
-            entity.Property(e => e.Shift).HasMaxLength(50).IsRequired();
-        });
-
-        modelBuilder.Entity<ProgramSemester>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-
-            // Un Programa tiene Muchos Semestres desglosados
-            entity.HasOne(ps => ps.AcademicProgram)
-                  .WithMany() // Si deseas navegación inversa, puedes mapearla en AcademicProgram después
-                  .HasForeignKey(ps => ps.AcademicProgramId)
-                  .OnDelete(DeleteBehavior.Cascade); // Si se borra el programa, se borran sus semestres
-
-            entity.Property(e => e.SemesterNumber).IsRequired();
-            entity.Property(e => e.MaxCredits).IsRequired();
-        });
-
-
-        base.OnModelCreating(modelBuilder);
-
-        // Configuración explícita de TeacherSubject para evitar shadow property
-        modelBuilder.Entity<TeacherSubject>(entity =>
-        {
-            entity.HasKey(ts => new { ts.TeacherId, ts.SubjectId });
+                .HasMaxLength(100);
 
             entity.HasOne(ts => ts.Teacher)
                 .WithMany(t => t.TeacherSubjects)
@@ -496,32 +423,128 @@ public class AppDbContext : DbContext
                 .WithMany(s => s.TeacherSubjects)
                 .HasForeignKey(ts => ts.SubjectId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(ts => ts.ContractType)
-                .HasMaxLength(50);
         });
 
-        // Configuración de Specialty (nueva entidad)
-        modelBuilder.Entity<Specialty>(entity =>
+        // ==========================================
+        // CONFIGURACIÓN: CLASSROOM
+        // ==========================================
+        modelBuilder.Entity<Classroom>(entity =>
         {
+            entity.ToTable("Classrooms");
+
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Name).IsUnique();
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+
+            entity.HasIndex(e => e.Code)
+                .IsUnique();
+
+            entity.Property(e => e.Code)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Building)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Type)
+                .HasMaxLength(100)
+                .IsRequired();
         });
 
-        // Configuración de Subject con Specialty
-        modelBuilder.Entity<Subject>()
-                .HasOne(s => s.Specialty)
-                .WithMany(s => s.Subjects)
-                .HasForeignKey(s => s.SpecialtyId)
-                .OnDelete(DeleteBehavior.SetNull);
+        // ==========================================
+        // CONFIGURACIÓN: SCHEDULE
+        // ==========================================
+        modelBuilder.Entity<Schedule>(entity =>
+        {
+            entity.ToTable("Schedules");
 
+            entity.HasKey(e => e.Id);
 
+            entity.HasOne(s => s.Subject)
+                .WithMany(s => s.Schedules)
+                .HasForeignKey(s => s.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(s => s.Teacher)
+                .WithMany()
+                .HasForeignKey(s => s.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(s => s.Classroom)
+                .WithMany()
+                .HasForeignKey(s => s.ClassroomId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.AcademicProgram)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.Shift)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("Draft");
+        });
+
+        // ==========================================
+        // CONFIGURACIÓN: ACADEMIC PROGRAM
+        // ==========================================
+        modelBuilder.Entity<AcademicProgram>(entity =>
+        {
+            entity.ToTable("AcademicPrograms");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.Code)
+                .IsUnique();
+
+            entity.Property(e => e.Code)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.Shift)
+                .HasMaxLength(50)
+                .IsRequired();
+        });
+
+        // ==========================================
+        // CONFIGURACIÓN: PROGRAM SEMESTER
+        // ==========================================
+        modelBuilder.Entity<ProgramSemester>(entity =>
+        {
+            entity.ToTable("ProgramSemesters");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(ps => ps.AcademicProgram)
+                .WithMany()
+                .HasForeignKey(ps => ps.AcademicProgramId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.SemesterNumber)
+                .IsRequired();
+
+            entity.Property(e => e.MaxCredits)
+                .IsRequired();
+        });
+
+        // ==========================================
+        // CONFIGURACIÓN: TEACHER SPECIALTY
+        // ==========================================
         modelBuilder.Entity<TeacherSpecialty>(entity =>
         {
+            entity.ToTable("TeacherSpecialties");
+
             entity.HasKey(ts => new { ts.TeacherId, ts.SpecialtyId });
 
             entity.HasOne(ts => ts.Teacher)
@@ -538,9 +561,5 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
         });
-
     }
-
-
-
 }

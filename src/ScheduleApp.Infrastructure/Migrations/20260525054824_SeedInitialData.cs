@@ -1,4 +1,38 @@
-﻿-- ==========================================
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace ScheduleApp.Infrastructure.Migrations
+{
+    /// <inheritdoc />
+    public partial class SeedInitialData : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            // Ajustes necesarios para que el seed coincida con los datos semilla.
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Users', 'UpdatedAt') IS NULL
+    ALTER TABLE [dbo].[Users] ADD [UpdatedAt] DATETIME2 NULL;
+
+IF COL_LENGTH('dbo.Specialties', 'Icon') IS NULL
+    ALTER TABLE [dbo].[Specialties] ADD [Icon] NVARCHAR(50) NULL;
+
+IF COL_LENGTH('dbo.TapsiRules', 'IsDeleted') IS NULL
+    ALTER TABLE [dbo].[TapsiRules] ADD [IsDeleted] BIT NOT NULL CONSTRAINT [DF_TapsiRules_IsDeleted] DEFAULT 0;
+
+IF COL_LENGTH('dbo.Teachers', 'IsDeleted') IS NULL
+    ALTER TABLE [dbo].[Teachers] ADD [IsDeleted] BIT NOT NULL CONSTRAINT [DF_Teachers_IsDeleted] DEFAULT 0;
+
+IF COL_LENGTH('dbo.Classrooms', 'IsDeleted') IS NULL
+    ALTER TABLE [dbo].[Classrooms] ADD [IsDeleted] BIT NOT NULL CONSTRAINT [DF_Classrooms_IsDeleted] DEFAULT 0;
+");
+
+            // Datos base para generar horarios automáticamente.
+            // NO inserta horarios en Schedules.
+            // NO inserta asignaciones fijas de aulas.
+            migrationBuilder.Sql(@"
+-- ==========================================
 -- 0. LIMPIEZA CONTROLADA DE DATOS SEMILLA
 -- ==========================================
 
@@ -758,3 +792,50 @@ WHERE NOT EXISTS (
 -- materias, WeeklyHours, disponibilidad docente, docentes por materia y aulas disponibles.
 
 PRINT 'Datos semilla unificados insertados correctamente.';
+
+");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[Schedules]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[Schedules];
+
+IF OBJECT_ID(N'[dbo].[TeacherAvailabilities]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[TeacherAvailabilities];
+
+IF OBJECT_ID(N'[dbo].[TeacherSubjects]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[TeacherSubjects];
+
+IF OBJECT_ID(N'[dbo].[TeacherSpecialties]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[TeacherSpecialties];
+
+IF OBJECT_ID(N'[dbo].[ProgramSemesters]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[ProgramSemesters];
+
+IF OBJECT_ID(N'[dbo].[Teachers]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[Teachers];
+
+IF OBJECT_ID(N'[dbo].[Subjects]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[Subjects];
+
+IF OBJECT_ID(N'[dbo].[Classrooms]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[Classrooms];
+
+IF OBJECT_ID(N'[dbo].[Specialties]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[Specialties];
+
+IF OBJECT_ID(N'[dbo].[AcademicPrograms]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[AcademicPrograms];
+
+IF OBJECT_ID(N'[dbo].[Users]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[Users];
+
+IF OBJECT_ID(N'[dbo].[TapsiRules]', N'U') IS NOT NULL
+    DELETE FROM [dbo].[TapsiRules];
+");
+        }
+    }
+}
