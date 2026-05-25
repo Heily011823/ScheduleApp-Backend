@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.4 - HU-74 fallback docente para materias sin TeacherSubject
+// Version: 0.5 - HU-77 fix asignacion de docente y distribucion de horario
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ using ScheduleApp.Infrastructure.Data;
 namespace ScheduleApp.Infrastructure.Repositories;
 
 // Repositorio para gestion de horarios.
-// Incluye generacion automatica (HU-74), guardado (HU-71), consulta filtrada
+// Incluye generacion automatica, guardado, consulta filtrada
 // y los metodos auxiliares para la validacion de creditos (HU-143).
 public class ScheduleRepository : IScheduleRepository
 {
@@ -88,8 +88,10 @@ public class ScheduleRepository : IScheduleRepository
         if (!classrooms.Any())
             return new List<GeneratedScheduleEntryDto>();
 
+        // Cargamos TeacherSpecialties para que la validacion de especialidad funcione.
         var teacherSubjects = await _context.TeacherSubjects
             .Include(ts => ts.Teacher)
+                .ThenInclude(t => t!.TeacherSpecialties)
             .Include(ts => ts.Subject)
             .Where(ts =>
                 ts.Teacher!.IsActive &&
@@ -97,10 +99,7 @@ public class ScheduleRepository : IScheduleRepository
                 ts.Subject.IsActive)
             .ToListAsync();
 
-        // HU-74 fix: si una materia no tiene docente asignado en TeacherSubjects,
-        // usamos un docente activo cualquiera como fallback.
-        // Esto evita que se omitan materias cuando la tabla TeacherSubjects
-        // todavia no esta poblada (caso comun en datos iniciales del proyecto).
+        // Docentes de respaldo para materias sin asignacion oficial.
         var fallbackTeachers = await _context.Teachers
             .Include(t => t.TeacherSpecialties)
                 .ThenInclude(ts => ts.Specialty)
@@ -113,30 +112,22 @@ public class ScheduleRepository : IScheduleRepository
 
         foreach (var subject in subjects)
         {
-            // Obtener la especialidad requerida por la materia (puede ser null)
             var requiredSpecialtyId = subject.SpecialtyId;
 
-            // 1. Buscar docente asignado oficialmente (TeacherSubject) que cumpla la especialidad
             var teacherSubject = teacherSubjects.FirstOrDefault(ts => ts.SubjectId == subject.Id);
 
-            Teacher? teacher = null;
-            if (teacherSubject?.Teacher != null)
-            {
-                if (!requiredSpecialtyId.HasValue ||
-                    teacherSubject.Teacher.TeacherSpecialties.Any(ts => ts.SpecialtyId == requiredSpecialtyId))
-                {
-                    teacher = teacherSubject.Teacher;
-                }
-            }
+            // 1. Si la materia tiene docente asignado oficialmente, se usa directamente.
+            // La asignacion oficial tiene prioridad sobre la validacion de especialidad.
+            Teacher? teacher = teacherSubject?.Teacher;
 
-            // 2. Si no se encontró docente asignado válido y la materia requiere especialidad, buscar en fallback
+            // 2. Sin asignacion oficial y con especialidad requerida: buscar en respaldo.
             if (teacher == null && requiredSpecialtyId.HasValue)
             {
                 teacher = fallbackTeachers
                     .FirstOrDefault(t => t.TeacherSpecialties.Any(ts => ts.SpecialtyId == requiredSpecialtyId));
             }
 
-            // 3. Si la materia NO requiere especialidad, tomar cualquier docente de respaldo
+            // 3. Sin asignacion oficial y sin especialidad: cualquier docente de respaldo.
             if (teacher == null && !requiredSpecialtyId.HasValue)
             {
                 teacher = fallbackTeachers.FirstOrDefault();
@@ -155,40 +146,48 @@ public class ScheduleRepository : IScheduleRepository
                 {
                     var slotEnd = slotStart.Add(ClassDuration);
 
-                    foreach (var classroom in classrooms)
+                    // El horario es para un mismo grupo: no puede haber dos
+                    // materias el mismo dia y hora.
+                    bool slotTakenByGroup = generatedSchedules.Any(s =>
+                        s.Day == day && s.StartTime == slotStart);
+                    if (slotTakenByGroup)
+                        continue;
+
+                    // El docente no puede estar en dos clases a la vez.
+                    if (IsTeacherBusy(existingSchedules, generatedSchedules, teacher.Id, day, slotStart, slotEnd))
+                        continue;
+
+                    // Primera aula libre para este dia y hora.
+                    var freeClassroom = classrooms.FirstOrDefault(c =>
+                        !IsClassroomBusy(existingSchedules, generatedSchedules, c.Id, day, slotStart, slotEnd));
+
+                    if (freeClassroom == null)
+                        continue;
+
+                    generatedSchedules.Add(new GeneratedScheduleEntryDto
                     {
-                        if (IsTeacherBusy(existingSchedules, generatedSchedules, teacher.Id, day, slotStart, slotEnd))
-                            break;
+                        Id = Guid.NewGuid(),
+                        SubjectId = subject.Id,
+                        SubjectCode = subject.Code,
+                        SubjectName = subject.Name,
+                        Credits = subject.Credits,
+                        WeeklyHours = subject.WeeklyHours,
+                        IsTapsi = subject.IsTapsi,
+                        TeacherId = teacher.Id,
+                        TeacherFullName = $"{teacher.FirstName} {teacher.LastName}",
+                        ClassroomId = freeClassroom.Id,
+                        ClassroomCode = freeClassroom.Code,
+                        ClassroomName = freeClassroom.Name,
+                        Day = day,
+                        StartTime = slotStart,
+                        EndTime = slotEnd,
+                        AcademicProgram = academicProgram.Name,
+                        Shift = shift,
+                        Semester = semesterNumber,
+                        Status = "Draft"
+                    });
 
-                        if (IsClassroomBusy(existingSchedules, generatedSchedules, classroom.Id, day, slotStart, slotEnd))
-                            continue;
-
-                        generatedSchedules.Add(new GeneratedScheduleEntryDto
-                        {
-                            Id = Guid.NewGuid(),
-                            SubjectId = subject.Id,
-                            SubjectCode = subject.Code,
-                            SubjectName = subject.Name,
-                            Credits = subject.Credits,
-                            WeeklyHours = subject.WeeklyHours,
-                            IsTapsi = subject.IsTapsi,
-                            TeacherId = teacher.Id,
-                            TeacherFullName = $"{teacher.FirstName} {teacher.LastName}",
-                            ClassroomId = classroom.Id,
-                            ClassroomCode = classroom.Code,
-                            ClassroomName = classroom.Name,
-                            Day = day,
-                            StartTime = slotStart,
-                            EndTime = slotEnd,
-                            AcademicProgram = academicProgram.Name,
-                            Shift = shift,
-                            Semester = semesterNumber,
-                            Status = "Draft"
-                        });
-
-                        assigned = true;
-                        break;
-                    }
+                    assigned = true;
                 }
             }
         }
