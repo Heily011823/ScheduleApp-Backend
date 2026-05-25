@@ -17,7 +17,7 @@ namespace ScheduleApp.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -30,8 +30,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -44,8 +44,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Shift")
                         .IsRequired()
@@ -63,7 +63,7 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("AcademicPrograms");
+                    b.ToTable("AcademicPrograms", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Assignment", b =>
@@ -119,8 +119,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -138,8 +138,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -149,7 +149,7 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Classrooms");
+                    b.ToTable("Classrooms", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.ProgramSemester", b =>
@@ -177,7 +177,7 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.HasIndex("AcademicProgramId");
 
-                    b.ToTable("ProgramSemesters");
+                    b.ToTable("ProgramSemesters", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Role", b =>
@@ -219,8 +219,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("AcademicProgram")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<Guid>("ClassroomId")
                         .HasColumnType("uniqueidentifier");
@@ -247,13 +247,12 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Draft");
 
                     b.Property<Guid>("SubjectId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("SubjectId1")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("TeacherId")
@@ -268,11 +267,9 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.HasIndex("SubjectId");
 
-                    b.HasIndex("SubjectId1");
-
                     b.HasIndex("TeacherId");
 
-                    b.ToTable("Schedules");
+                    b.ToTable("Schedules", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Specialty", b =>
@@ -310,7 +307,7 @@ namespace ScheduleApp.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Specialties");
+                    b.ToTable("Specialties", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.Subject", b =>
@@ -321,8 +318,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -336,7 +333,9 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsTapsi")
                         .ValueGeneratedOnAdd()
@@ -345,8 +344,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("Semester")
                         .HasColumnType("int");
@@ -444,8 +443,7 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -454,16 +452,15 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("RuleType")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -515,8 +512,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("IdentityDocument")
                         .IsRequired()
@@ -530,8 +527,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(20)
@@ -601,7 +598,7 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.HasIndex("SpecialtyId");
 
-                    b.ToTable("TeacherSpecialties");
+                    b.ToTable("TeacherSpecialties", (string)null);
                 });
 
             modelBuilder.Entity("ScheduleApp.Domain.Entities.TeacherSubject", b =>
@@ -614,8 +611,8 @@ namespace ScheduleApp.Infrastructure.Migrations
 
                     b.Property<string>("ContractType")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("TeacherId", "SubjectId");
 
@@ -702,14 +699,10 @@ namespace ScheduleApp.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ScheduleApp.Domain.Entities.Subject", "Subject")
-                        .WithMany()
+                        .WithMany("Schedules")
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("ScheduleApp.Domain.Entities.Subject", null)
-                        .WithMany("Schedules")
-                        .HasForeignKey("SubjectId1");
 
                     b.HasOne("ScheduleApp.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
