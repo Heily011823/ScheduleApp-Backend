@@ -1,5 +1,5 @@
--- ==========================================================================
--- SCRIPT DE CREACIÓN DE TABLAS
+﻿-- ==========================================================================
+-- SCRIPT DE CREACIÃ“N DE TABLAS
 -- ScheduleApp
 -- ==========================================================================
 
@@ -314,6 +314,7 @@ BEGIN
         Status NVARCHAR(50) NOT NULL DEFAULT 'Draft',
         CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
         UpdatedAt DATETIME2 NULL,
+        SubjectId1 UNIQUEIDENTIFIER NULL,
 
         CONSTRAINT FK_Schedules_Subjects 
             FOREIGN KEY (SubjectId) 
