@@ -1,15 +1,16 @@
 ﻿// Autor: Jacobo
 // Version: 0.8 - Rotacion de aulas y horario diurno 07-18
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.EntityFrameworkCore;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
 using ScheduleApp.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ScheduleApp.Infrastructure.Repositories;
 
@@ -17,9 +18,13 @@ public class ScheduleRepository : IScheduleRepository
 {
     private readonly AppDbContext _context;
 
+<<<<<<< HEAD
     private static readonly TimeSpan SlotStep   = TimeSpan.FromHours(1);
     private static readonly TimeSpan LunchStart = TimeSpan.FromHours(12);
     private static readonly TimeSpan LunchEnd   = TimeSpan.FromHours(14);
+=======
+    private static readonly TimeSpan ClassDuration = new TimeSpan(1, 0, 0);
+>>>>>>> 22fc9b4 (Fix. se arregla logica de horario nocturno.)
     private const int FirstDay = 1;
     private const int LastDay  = 6;
 
@@ -54,14 +59,45 @@ public class ScheduleRepository : IScheduleRepository
     }
 
     public async Task<List<GeneratedScheduleEntryDto>> GetSubjectsForGenerationAsync(
+<<<<<<< HEAD
         Guid academicProgramId, int semesterNumber, string shift)
+=======
+    Guid academicProgramId,
+    int semesterNumber,
+    string shift)
+>>>>>>> 22fc9b4 (Fix. se arregla logica de horario nocturno.)
     {
+        TimeSpan startHour;
+        TimeSpan endHour;
+
+        if (shift == "Nocturna")
+        {
+            startHour = new TimeSpan(18, 30, 0);
+            endHour = new TimeSpan(23, 30, 0);
+        }
+        else
+        {
+            startHour = new TimeSpan(7, 0, 0);
+            endHour = new TimeSpan(12, 0, 0);
+        }
+
         var academicProgram = await _context.AcademicPrograms
+<<<<<<< HEAD
             .FirstOrDefaultAsync(p => p.Id == academicProgramId && p.IsActive);
         if (academicProgram == null) return new();
+=======
+            .FirstOrDefaultAsync(
+                p => p.Id == academicProgramId &&
+                p.IsActive);
+
+        if (academicProgram == null)
+            return new List<GeneratedScheduleEntryDto>();
+>>>>>>> 22fc9b4 (Fix. se arregla logica de horario nocturno.)
 
         var subjects = await _context.Subjects
-            .Where(s => s.Semester == semesterNumber && s.IsActive)
+            .Where(s =>
+                s.Semester == semesterNumber &&
+                s.IsActive)
             .OrderBy(s => s.Name)
             .ToListAsync();
         if (!subjects.Any()) return new();
@@ -79,12 +115,25 @@ public class ScheduleRepository : IScheduleRepository
             .ToListAsync();
 
         var fallbackTeachers = await _context.Teachers
+<<<<<<< HEAD
             .Include(t => t.TeacherSpecialties).ThenInclude(ts => ts.Specialty)
             .Where(t => t.IsActive)
             .ToListAsync();
 
         var existingSchedules = await _context.Schedules.ToListAsync();
         var generatedSchedules = new List<GeneratedScheduleEntryDto>();
+=======
+            .Include(t => t.TeacherSpecialties)
+            .ThenInclude(ts => ts.Specialty)
+            .Where(t => t.IsActive)
+            .ToListAsync();
+
+        var existingSchedules =
+            await _context.Schedules.ToListAsync();
+
+        var generatedSchedules =
+            new List<GeneratedScheduleEntryDto>();
+>>>>>>> 22fc9b4 (Fix. se arregla logica de horario nocturno.)
 
         // Horario segun jornada
         bool nocturna = shift?.ToLower().Contains("nocturna") == true;
@@ -96,6 +145,7 @@ public class ScheduleRepository : IScheduleRepository
 
         foreach (var subject in subjects)
         {
+<<<<<<< HEAD
             // --- Asignacion de docente ---
             var teacherSubject = teacherSubjects.FirstOrDefault(ts => ts.SubjectId == subject.Id);
             Teacher? teacher = teacherSubject?.Teacher;
@@ -106,6 +156,50 @@ public class ScheduleRepository : IScheduleRepository
 
             if (teacher == null)
                 teacher = fallbackTeachers.FirstOrDefault();
+=======
+            var requiredSpecialtyId =
+                subject.SpecialtyId;
+
+            var teacherSubject =
+                teacherSubjects.FirstOrDefault(
+                    ts => ts.SubjectId == subject.Id);
+
+            Teacher? teacher = null;
+
+            if (teacherSubject?.Teacher != null)
+            {
+                if (!requiredSpecialtyId.HasValue ||
+                    teacherSubject
+                    .Teacher
+                    .TeacherSpecialties
+                    .Any(ts =>
+                        ts.SpecialtyId ==
+                        requiredSpecialtyId))
+                {
+                    teacher =
+                        teacherSubject.Teacher;
+                }
+            }
+
+            if (teacher == null &&
+                requiredSpecialtyId.HasValue)
+            {
+                teacher =
+                    fallbackTeachers.FirstOrDefault(
+                        t =>
+                        t.TeacherSpecialties.Any(
+                            ts =>
+                            ts.SpecialtyId ==
+                            requiredSpecialtyId));
+            }
+
+            if (teacher == null &&
+                !requiredSpecialtyId.HasValue)
+            {
+                teacher =
+                    fallbackTeachers.FirstOrDefault();
+            }
+>>>>>>> 22fc9b4 (Fix. se arregla logica de horario nocturno.)
 
             if (teacher == null)
                 continue;
@@ -118,6 +212,7 @@ public class ScheduleRepository : IScheduleRepository
             int sesionesNecesarias = (int)Math.Ceiling((double)subject.WeeklyHours / horasXSesion);
             int sesionesColocadas  = 0;
 
+<<<<<<< HEAD
             for (int pasada = 0; pasada < 2 && sesionesColocadas < sesionesNecesarias; pasada++)
             {
                 for (int day = FirstDay; day <= LastDay && sesionesColocadas < sesionesNecesarias; day++)
@@ -185,6 +280,109 @@ public class ScheduleRepository : IScheduleRepository
                             Semester        = semesterNumber,
                             Status          = "Draft"
                         });
+=======
+            for (
+                int day = FirstDay;
+                day <= LastDay && !assigned;
+                day++)
+            {
+                for (
+                    var slotStart = startHour;
+                    slotStart < endHour &&
+                    !assigned;
+                    slotStart =
+                    slotStart.Add(ClassDuration))
+                {
+                    var slotEnd =
+                        slotStart.Add(ClassDuration);
+
+                    foreach (
+                        var classroom
+                        in classrooms)
+                    {
+                        if (IsTeacherBusy(
+                            existingSchedules,
+                            generatedSchedules,
+                            teacher.Id,
+                            day,
+                            slotStart,
+                            slotEnd))
+                        {
+                            break;
+                        }
+
+                        if (IsClassroomBusy(
+                            existingSchedules,
+                            generatedSchedules,
+                            classroom.Id,
+                            day,
+                            slotStart,
+                            slotEnd))
+                        {
+                            continue;
+                        }
+
+                        generatedSchedules.Add(
+                            new GeneratedScheduleEntryDto
+                            {
+                                Id =
+                                    Guid.NewGuid(),
+
+                                SubjectId =
+                                    subject.Id,
+
+                                SubjectCode =
+                                    subject.Code,
+
+                                SubjectName =
+                                    subject.Name,
+
+                                Credits =
+                                    subject.Credits,
+
+                                WeeklyHours =
+                                    subject.WeeklyHours,
+
+                                IsTapsi =
+                                    subject.IsTapsi,
+
+                                TeacherId =
+                                    teacher.Id,
+
+                                TeacherFullName =
+                                    $"{teacher.FirstName} {teacher.LastName}",
+
+                                ClassroomId =
+                                    classroom.Id,
+
+                                ClassroomCode =
+                                    classroom.Code,
+
+                                ClassroomName =
+                                    classroom.Name,
+
+                                Day =
+                                    day,
+
+                                StartTime =
+                                    slotStart,
+
+                                EndTime =
+                                    slotEnd,
+
+                                AcademicProgram =
+                                    academicProgram.Name,
+
+                                Shift =
+                                    shift,
+
+                                Semester =
+                                    semesterNumber,
+
+                                Status =
+                                    "Draft"
+                            });
+>>>>>>> 22fc9b4 (Fix. se arregla logica de horario nocturno.)
 
                         aulaIdx++;
                         sesionesColocadas++;
@@ -196,7 +394,6 @@ public class ScheduleRepository : IScheduleRepository
 
         return generatedSchedules;
     }
-
     public async Task SaveAsync(List<GeneratedScheduleEntryDto> schedules)
     {
         if (schedules == null || schedules.Count == 0) return;
