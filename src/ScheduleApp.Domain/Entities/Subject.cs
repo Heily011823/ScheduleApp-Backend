@@ -10,7 +10,6 @@
         public int WeeklyHours { get; set; }
         public bool IsActive { get; set; } = true;
 
-        // Regla especial TAPSI
         public bool IsTapsi { get; set; } = false;
 
         public bool IsDeleted { get; set; } = false;
