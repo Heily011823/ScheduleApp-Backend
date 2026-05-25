@@ -1,5 +1,5 @@
 ﻿// Autor: Jacobo
-// Version: 0.7 - Sesiones de 2h, receso 12-14, 3h de seguido
+// Version: 0.8 - Rotacion de aulas y horario diurno 07-18
 
 using System;
 using System.Collections.Generic;
@@ -17,10 +17,7 @@ public class ScheduleRepository : IScheduleRepository
 {
     private readonly AppDbContext _context;
 
-    // Paso de iteracion para buscar slots (1 hora)
     private static readonly TimeSpan SlotStep   = TimeSpan.FromHours(1);
-    private static readonly TimeSpan DayStart   = TimeSpan.FromHours(7);
-    private static readonly TimeSpan DayEnd     = TimeSpan.FromHours(21);
     private static readonly TimeSpan LunchStart = TimeSpan.FromHours(12);
     private static readonly TimeSpan LunchEnd   = TimeSpan.FromHours(14);
     private const int FirstDay = 1;
@@ -89,6 +86,14 @@ public class ScheduleRepository : IScheduleRepository
         var existingSchedules = await _context.Schedules.ToListAsync();
         var generatedSchedules = new List<GeneratedScheduleEntryDto>();
 
+        // Horario segun jornada
+        bool nocturna = shift?.ToLower().Contains("nocturna") == true;
+        var dayStart = nocturna ? TimeSpan.FromHours(17) : TimeSpan.FromHours(7);
+        var dayEnd   = nocturna ? TimeSpan.FromHours(21) : TimeSpan.FromHours(18);
+
+        // Rotacion de aulas para no asignar siempre la misma
+        int aulaIdx = 0;
+
         foreach (var subject in subjects)
         {
             // --- Asignacion de docente ---
@@ -106,83 +111,84 @@ public class ScheduleRepository : IScheduleRepository
                 continue;
 
             // --- Duracion de cada sesion ---
-            // 3 h/semana → una sesion de 3 h seguidas
-            // 1 h/semana → una sesion de 1 h
-            // resto      → sesiones de 2 h
             int horasXSesion = subject.WeeklyHours == 3 ? 3
                              : subject.WeeklyHours == 1 ? 1
                              : 2;
-            var duracionSesion = TimeSpan.FromHours(horasXSesion);
+            var duracionSesion   = TimeSpan.FromHours(horasXSesion);
             int sesionesNecesarias = (int)Math.Ceiling((double)subject.WeeklyHours / horasXSesion);
+            int sesionesColocadas  = 0;
 
-            int sesionesColocadas = 0;
-
-            // Dos pasadas: pasada 0 = una sesion por dia (distribucion optima)
-            //              pasada 1 = rellena sesiones restantes
             for (int pasada = 0; pasada < 2 && sesionesColocadas < sesionesNecesarias; pasada++)
             {
                 for (int day = FirstDay; day <= LastDay && sesionesColocadas < sesionesNecesarias; day++)
                 {
-                    // Pasada 0: no repetir el mismo dia para esta materia
                     if (pasada == 0 && generatedSchedules.Any(s => s.SubjectId == subject.Id && s.Day == day))
                         continue;
 
-                    for (var slotStart = DayStart; slotStart < DayEnd; slotStart += SlotStep)
+                    for (var slotStart = dayStart; slotStart < dayEnd; slotStart += SlotStep)
                     {
                         var slotEnd = slotStart + duracionSesion;
 
-                        // La sesion no puede salirse del horario del dia
-                        if (slotEnd > DayEnd)
+                        if (slotEnd > dayEnd)
                             break;
 
                         // Sin clases de 12:00 a 14:00
                         if (slotStart < LunchEnd && slotEnd > LunchStart)
                             continue;
 
-                        // Sin conflicto con otra materia del mismo grupo (overlap)
+                        // Sin conflicto con otra materia del grupo
                         if (generatedSchedules.Any(s =>
                                 s.Day == day &&
                                 s.StartTime < slotEnd &&
                                 s.EndTime > slotStart))
                             continue;
 
-                        // Sin conflicto del docente
                         if (IsTeacherBusy(existingSchedules, generatedSchedules,
                                 teacher.Id, day, slotStart, slotEnd))
                             continue;
 
-                        // Buscar aula libre
-                        var freeClassroom = classrooms.FirstOrDefault(c =>
-                            !IsClassroomBusy(existingSchedules, generatedSchedules,
-                                c.Id, day, slotStart, slotEnd));
+                        // Buscar aula libre con rotacion para distribuir entre salones
+                        Classroom? freeClassroom = null;
+                        for (int k = 0; k < classrooms.Count; k++)
+                        {
+                            var candidate = classrooms[(aulaIdx + k) % classrooms.Count];
+                            if (!IsClassroomBusy(existingSchedules, generatedSchedules,
+                                    candidate.Id, day, slotStart, slotEnd))
+                            {
+                                freeClassroom = candidate;
+                                break;
+                            }
+                        }
+
                         if (freeClassroom == null)
                             continue;
 
                         generatedSchedules.Add(new GeneratedScheduleEntryDto
                         {
-                            Id             = Guid.NewGuid(),
-                            SubjectId      = subject.Id,
-                            SubjectCode    = subject.Code,
-                            SubjectName    = subject.Name,
-                            Credits        = subject.Credits,
-                            WeeklyHours    = subject.WeeklyHours,
-                            IsTapsi        = subject.IsTapsi,
-                            TeacherId      = teacher.Id,
+                            Id              = Guid.NewGuid(),
+                            SubjectId       = subject.Id,
+                            SubjectCode     = subject.Code,
+                            SubjectName     = subject.Name,
+                            Credits         = subject.Credits,
+                            WeeklyHours     = subject.WeeklyHours,
+                            IsTapsi         = subject.IsTapsi,
+                            TeacherId       = teacher.Id,
                             TeacherFullName = $"{teacher.FirstName} {teacher.LastName}",
-                            ClassroomId    = freeClassroom.Id,
-                            ClassroomCode  = freeClassroom.Code,
-                            ClassroomName  = freeClassroom.Name,
-                            Day            = day,
-                            StartTime      = slotStart,
-                            EndTime        = slotEnd,
+                            ClassroomId     = freeClassroom.Id,
+                            ClassroomCode   = freeClassroom.Code,
+                            ClassroomName   = freeClassroom.Name,
+                            Day             = day,
+                            StartTime       = slotStart,
+                            EndTime         = slotEnd,
                             AcademicProgram = academicProgram.Name,
-                            Shift          = shift,
-                            Semester       = semesterNumber,
-                            Status         = "Draft"
+                            Shift           = shift,
+                            Semester        = semesterNumber,
+                            Status          = "Draft"
                         });
 
+                        aulaIdx++;
                         sesionesColocadas++;
-                        break; // una sesion por dia en esta pasada
+                        break;
                     }
                 }
             }
@@ -207,18 +213,18 @@ public class ScheduleRepository : IScheduleRepository
 
         var entities = schedules.Select(s => new Schedule
         {
-            Id             = s.Id == Guid.Empty ? Guid.NewGuid() : s.Id,
-            SubjectId      = s.SubjectId,
-            TeacherId      = s.TeacherId,
-            ClassroomId    = s.ClassroomId,
-            Day            = (DayOfWeek)s.Day,
-            StartTime      = s.StartTime,
-            EndTime        = s.EndTime,
+            Id              = s.Id == Guid.Empty ? Guid.NewGuid() : s.Id,
+            SubjectId       = s.SubjectId,
+            TeacherId       = s.TeacherId,
+            ClassroomId     = s.ClassroomId,
+            Day             = (DayOfWeek)s.Day,
+            StartTime       = s.StartTime,
+            EndTime         = s.EndTime,
             AcademicProgram = s.AcademicProgram,
-            Shift          = s.Shift,
-            Semester       = s.Semester,
-            Status         = "Saved",
-            CreatedAt      = DateTime.UtcNow
+            Shift           = s.Shift,
+            Semester        = s.Semester,
+            Status          = "Saved",
+            CreatedAt       = DateTime.UtcNow
         }).ToList();
 
         await _context.Schedules.AddRangeAsync(entities);
