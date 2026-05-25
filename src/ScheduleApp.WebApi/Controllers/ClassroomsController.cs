@@ -1,10 +1,14 @@
 ﻿// src/ScheduleApp.WebApi/Controllers/ClassroomsController.cs
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.InkML;
 using Microsoft.AspNetCore.Mvc;
 using ScheduleApp.Application.DTOs;
 using ScheduleApp.Application.Interfaces;
 using ScheduleApp.Domain.Entities;
+using ScheduleApp.Infrastructure.Data;
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace ScheduleApp.WebApi.Controllers;
 
@@ -19,13 +23,15 @@ public class ClassroomsController : ControllerBase
 {
     private readonly IClassroomService _classroomService;
     private readonly IClassroomAvailabilityService _availabilityService;
+    private readonly AppDbContext _context;
 
     public ClassroomsController(
         IClassroomService classroomService,
-        IClassroomAvailabilityService availabilityService)
+        IClassroomAvailabilityService availabilityService, AppDbContext context)
     {
         _classroomService = classroomService;
         _availabilityService = availabilityService;
+        _context = context;
     }
 
 
@@ -191,5 +197,66 @@ public class ClassroomsController : ControllerBase
             message = result,
             dayOfWeek = assignment.Date.DayOfWeek.ToString()
         });
+    }
+
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportExcel()
+    {
+        var classrooms = await _context.Classrooms
+            .AsQueryable()
+            .AsNoTracking()
+            .OrderBy(c => c.Code)
+            .ToListAsync();
+
+        using var workbook = new XLWorkbook();
+
+        var worksheet = workbook.Worksheets.Add("Aulas");
+
+        worksheet.Cell(1, 1).Value = "Código";
+        worksheet.Cell(1, 2).Value = "Nombre";
+        worksheet.Cell(1, 3).Value = "Edificio";
+        worksheet.Cell(1, 4).Value = "Piso";
+        worksheet.Cell(1, 5).Value = "Capacidad";
+        worksheet.Cell(1, 6).Value = "Tipo";
+        worksheet.Cell(1, 7).Value = "Estado";
+
+        var headerRange = worksheet.Range(1, 1, 1, 7);
+
+        headerRange.Style.Font.Bold = true;
+
+        headerRange.Style.Fill.BackgroundColor =
+            XLColor.FromHtml("#1B2A41");
+
+        headerRange.Style.Font.FontColor =
+            XLColor.White;
+
+        int row = 2;
+
+        foreach (var c in classrooms)
+        {
+            worksheet.Cell(row, 1).Value = c.Code;
+            worksheet.Cell(row, 2).Value = c.Name;
+            worksheet.Cell(row, 3).Value = c.Building;
+            worksheet.Cell(row, 4).Value = c.Floor;
+            worksheet.Cell(row, 5).Value = c.Capacity;
+            worksheet.Cell(row, 6).Value = c.Type;
+            worksheet.Cell(row, 7).Value =
+                c.IsActive ? "Activa" : "Inactiva";
+
+            row++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+
+        workbook.SaveAs(stream);
+
+        var content = stream.ToArray();
+
+        return File(
+            content,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "aulas.xlsx");
     }
 }
